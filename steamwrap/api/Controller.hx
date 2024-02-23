@@ -252,6 +252,16 @@ class Controller {
 	/**
 	 * Get a local path to art for on-screen glyph for a particular origin
 	 * @param	origin
+	 * @param	flags
+	 * @return
+	 */
+	public function getGlyphSVGForActionOrigin(origin:EInputActionOrigin, flags:Int):String {
+		return SteamWrap_GetGlyphSVGForActionOrigin(origin, flags);
+	}
+
+	/**
+	 * Get a local path to art for on-screen glyph for a particular origin
+	 * @param	origin
 	 * @return
 	 */
 	public function getGlyphForActionOrigin_Legacy(origin:EInputActionOrigin):String {
@@ -266,6 +276,16 @@ class Controller {
 	public function getStringForActionOrigin(origin:EInputActionOrigin):String {
 		return SteamWrap_GetStringForActionOrigin(origin);
 	}
+
+	/**
+	 * Returns a localized string (from Steam's language setting) for the user-facing action name corresponding to the specified handle
+	 * @param	actionHandle
+	 * @return
+	 */
+	public function getStringForAnalogActionName(actionHandle:Int):String {
+		return SteamWrap_GetStringForAnalogActionName(actionHandle);
+	}
+	
 
 	/**
 	 * Activates the Steam overlay and shows the input configuration (binding) screen
@@ -500,7 +520,9 @@ class Controller {
 	private var SteamWrap_ShowBindingPanel:Dynamic;
 	private var SteamWrap_GetStringForActionOrigin:Dynamic;
 	private var SteamWrap_GetGlyphPNGForActionOrigin:Dynamic;
+	private var SteamWrap_GetGlyphSVGForActionOrigin:Dynamic;
 	private var SteamWrap_GetGlyphForActionOrigin_Legacy:Dynamic;
+	private var SteamWrap_GetStringForAnalogActionName:Dynamic;
 
 	private static var SteamWrap_GetControllerMaxCount:Dynamic;
 	private static var SteamWrap_GetControllerMaxAnalogActions:Dynamic;
@@ -559,8 +581,10 @@ class Controller {
 			SteamWrap_InitControllers = cpp.Lib.load("steamwrap", "SteamWrap_InitControllers", 1);
 			SteamWrap_ShowBindingPanel = cpp.Lib.load("steamwrap", "SteamWrap_ShowBindingPanel", 1);
 			SteamWrap_GetGlyphPNGForActionOrigin = cpp.Lib.load("steamwrap", "SteamWrap_GetGlyphPNGForActionOrigin", 3);
+			SteamWrap_GetGlyphSVGForActionOrigin = cpp.Lib.load("steamwrap", "SteamWrap_GetGlyphSVGForActionOrigin", 2);
 			SteamWrap_GetGlyphForActionOrigin_Legacy = cpp.Lib.load("steamwrap", "SteamWrap_GetGlyphForActionOrigin_Legacy", 1);
 			SteamWrap_GetStringForActionOrigin = cpp.Lib.load("steamwrap", "SteamWrap_GetStringForActionOrigin", 1);
+			SteamWrap_GetStringForAnalogActionName = cpp.Lib.load("steamwrap", "SteamWrap_GetStringForAnalogActionName", 1);
 			SteamWrap_ShutdownControllers = cpp.Lib.load("steamwrap", "SteamWrap_ShutdownControllers", 0);
 
 			SteamWrap_GetControllerMaxCount = cpp.Lib.load("steamwrap", "SteamWrap_GetControllerMaxCount", 0);

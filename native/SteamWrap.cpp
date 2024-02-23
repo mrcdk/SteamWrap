@@ -2721,6 +2721,30 @@ value SteamWrap_GetGlyphPNGForActionOrigin(value origin, value size, int flags)
 DEFINE_PRIM(SteamWrap_GetGlyphPNGForActionOrigin,3);
 
 //-----------------------------------------------------------------------------------------------------------
+value SteamWrap_GetGlyphSVGForActionOrigin(value origin, int flags)
+{
+	if (!val_is_int(origin) || !CheckInit())
+	{
+		return alloc_string("none");
+	}
+
+	
+	int iOrigin = val_int(origin);
+	if (iOrigin >= k_EInputActionOrigin_Count)
+	{
+		return alloc_string("none");
+	}
+
+	EInputActionOrigin eOrigin = static_cast<EInputActionOrigin>(iOrigin);
+
+	unsigned short nFlags = flags;
+	
+	const char * result = SteamInput()->GetGlyphSVGForActionOrigin(eOrigin, nFlags);
+	return alloc_string(result);
+}
+DEFINE_PRIM(SteamWrap_GetGlyphSVGForActionOrigin,3);
+
+//-----------------------------------------------------------------------------------------------------------
 value SteamWrap_GetGlyphForActionOrigin_Legacy(value origin)
 {
 	if (!val_is_int(origin) || !CheckInit())
@@ -2762,7 +2786,16 @@ value SteamWrap_GetStringForActionOrigin(value origin)
 }
 DEFINE_PRIM(SteamWrap_GetStringForActionOrigin,1);
 
-//-----------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------
+value GetStringForAnalogActionName(value actionHandle)
+{
+	InputAnalogActionHandle_t a_handle = val_int(actionHandle);
+	const char * result = SteamInput()->GetStringForAnalogActionName(a_handle);
+	return alloc_string(result);
+}
+DEFINE_PRIM(GetStringForAnalogActionName,1);
+
+//----------------------------------------------------------------------------------------------------------
 int SteamWrap_ActivateActionSet(int controllerHandle, int actionSetHandle)
 {
 	ControllerHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
