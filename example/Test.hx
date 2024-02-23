@@ -69,7 +69,7 @@ class Test
 		
 		if (controllers != null && controllers.length > 0)
 		{
-			var fireOrigins:Array<EControllerActionOrigin> = [];
+			var fireOrigins:Array<EInputActionOrigin> = [];
 			var fireOriginCount = Steam.controllers.getDigitalActionOrigins(controllers[0], inGameControls, fire, fireOrigins);
 			
 			trace("===DIGITAL ACTION ORIGINS===");
@@ -84,7 +84,7 @@ class Test
 			trace("===ANALOG ACTION HANDLES===");
 			trace("throttle = " + throttle + " move = " + move + " camera = " + camera);
 			
-			var moveOrigins:Array<EControllerActionOrigin> = [];
+			var moveOrigins:Array<EInputActionOrigin> = [];
 			var moveOriginCount = Steam.controllers.getAnalogActionOrigins(controllers[0], inGameControls, move, moveOrigins);
 			
 			trace("===ANALOG ACTION ORIGINS===");
