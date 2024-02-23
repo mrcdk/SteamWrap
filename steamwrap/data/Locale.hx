@@ -4,7 +4,7 @@ package steamwrap.data;
  * ...
  * @author 
  */
-@:enum
+enum
 abstract Locale(String) from String
 {
 	var BRAZILIAN = "brazilian";

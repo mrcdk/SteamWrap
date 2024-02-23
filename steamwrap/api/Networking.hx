@@ -58,7 +58,7 @@ class Networking extends SteamBase {
 	
 }
 
-@:enum abstract EP2PSend(Int) {
+enum abstract EP2PSend(Int) {
 	
 	/** Akin to UDP */
 	public var UNRELIABLE = 0;
