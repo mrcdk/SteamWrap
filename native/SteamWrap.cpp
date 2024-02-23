@@ -2421,11 +2421,11 @@ DEFINE_PRIME1(SteamWrap_SetLobbyType);
 //STEAM CONTROLLER-------------------------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------------------------------------
-value SteamWrap_InitControllers()
+value SteamWrap_InitControllers(bool explicitlyCallRunFrame )
 {
 	if (!SteamInput()) return alloc_bool(false);
 
-	bool result = SteamInput()->Init();
+	bool result = SteamInput()->Init(explicitlyCallRunFrame);
 	
 	if (result)
 	{
@@ -2439,7 +2439,7 @@ value SteamWrap_InitControllers()
 	
 	return alloc_bool(result);
 }
-DEFINE_PRIM(SteamWrap_InitControllers,0);
+DEFINE_PRIM(SteamWrap_InitControllers, 1);
 
 //-----------------------------------------------------------------------------------------------------------
 value SteamWrap_ShutdownControllers()
@@ -2684,7 +2684,44 @@ value SteamWrap_GetAnalogActionOrigins(value controllerHandle, value actionSetHa
 DEFINE_PRIM(SteamWrap_GetAnalogActionOrigins,3);
 
 //-----------------------------------------------------------------------------------------------------------
-value SteamWrap_GetGlyphForActionOrigin(value origin)
+value SteamWrap_GetGlyphPNGForActionOrigin(value origin, value size, int flags)
+{
+	if (!val_is_int(origin) || !CheckInit())
+	{
+		return alloc_string("none");
+	}
+
+	
+	int iOrigin = val_int(origin);
+	if (iOrigin >= k_EInputActionOrigin_Count)
+	{
+		return alloc_string("none");
+	}
+
+	EInputActionOrigin eOrigin = static_cast<EInputActionOrigin>(iOrigin);
+
+	if (!val_is_int(size))
+	{
+		return alloc_string("none");
+	}
+
+	int iSize = val_int(size);
+	if (iSize >= k_ESteamInputGlyphSize_Count)
+	{
+		return alloc_string("none");
+	}
+
+	ESteamInputGlyphSize eSize = static_cast<ESteamInputGlyphSize>(iSize);
+
+	unsigned short nFlags = flags;
+	
+	const char * result = SteamInput()->GetGlyphPNGForActionOrigin(eOrigin, eSize, nFlags);
+	return alloc_string(result);
+}
+DEFINE_PRIM(SteamWrap_GetGlyphPNGForActionOrigin,3);
+
+//-----------------------------------------------------------------------------------------------------------
+value SteamWrap_GetGlyphForActionOrigin_Legacy(value origin)
 {
 	if (!val_is_int(origin) || !CheckInit())
 	{
@@ -2692,17 +2729,17 @@ value SteamWrap_GetGlyphForActionOrigin(value origin)
 	}
 	
 	int iOrigin = val_int(origin);
-	if (iOrigin >= k_EControllerActionOrigin_Count)
+	if (iOrigin >= k_EInputActionOrigin_Count)
 	{
 		return alloc_string("none");
 	}
 	
-	EControllerActionOrigin eOrigin = static_cast<EControllerActionOrigin>(iOrigin);
+	EInputActionOrigin eOrigin = static_cast<EInputActionOrigin>(iOrigin);
 	
-	const char * result = SteamInput()->GetGlyphForActionOrigin(eOrigin);
+	const char * result = SteamInput()->GetGlyphForActionOrigin_Legacy(eOrigin);
 	return alloc_string(result);
 }
-DEFINE_PRIM(SteamWrap_GetGlyphForActionOrigin,1);
+DEFINE_PRIM(SteamWrap_GetGlyphForActionOrigin_Legacy,1);
 
 //-----------------------------------------------------------------------------------------------------------
 value SteamWrap_GetStringForActionOrigin(value origin)
@@ -2713,12 +2750,12 @@ value SteamWrap_GetStringForActionOrigin(value origin)
 	}
 	
 	int iOrigin = val_int(origin);
-	if (iOrigin >= k_EControllerActionOrigin_Count)
+	if (iOrigin >= k_EInputActionOrigin_Count)
 	{
 		return alloc_string("unknown");
 	}
 	
-	EControllerActionOrigin eOrigin = static_cast<EControllerActionOrigin>(iOrigin);
+	EInputActionOrigin eOrigin = static_cast<EInputActionOrigin>(iOrigin);
 	
 	const char * result = SteamInput()->GetStringForActionOrigin(eOrigin);
 	return alloc_string(result);

@@ -241,10 +241,21 @@ class Controller {
 	/**
 	 * Get a local path to art for on-screen glyph for a particular origin
 	 * @param	origin
+	 * @param	size
+	 * @param	flags
 	 * @return
 	 */
-	public function getGlyphForActionOrigin(origin:EInputActionOrigin):String {
-		return SteamWrap_GetGlyphForActionOrigin(origin);
+	public function getGlyphPNGForActionOrigin(origin:EInputActionOrigin, size:ESteamInputGlyphSize, flags:Int):String {
+		return SteamWrap_GetGlyphPNGForActionOrigin(origin, size, flags);
+	}
+
+	/**
+	 * Get a local path to art for on-screen glyph for a particular origin
+	 * @param	origin
+	 * @return
+	 */
+	public function getGlyphForActionOrigin_Legacy(origin:EInputActionOrigin):String {
+		return SteamWrap_GetGlyphForActionOrigin_Legacy(origin);
 	}
 
 	/**
@@ -488,7 +499,8 @@ class Controller {
 	private var SteamWrap_GetAnalogActionOrigins:Dynamic;
 	private var SteamWrap_ShowBindingPanel:Dynamic;
 	private var SteamWrap_GetStringForActionOrigin:Dynamic;
-	private var SteamWrap_GetGlyphForActionOrigin:Dynamic;
+	private var SteamWrap_GetGlyphPNGForActionOrigin:Dynamic;
+	private var SteamWrap_GetGlyphForActionOrigin_Legacy:Dynamic;
 
 	private static var SteamWrap_GetControllerMaxCount:Dynamic;
 	private static var SteamWrap_GetControllerMaxAnalogActions:Dynamic;
@@ -544,9 +556,10 @@ class Controller {
 			SteamWrap_GetDigitalActionOrigins = cpp.Lib.load("steamwrap", "SteamWrap_GetDigitalActionOrigins", 3);
 			SteamWrap_GetEnteredGamepadTextInput = cpp.Lib.load("steamwrap", "SteamWrap_GetEnteredGamepadTextInput", 0);
 			SteamWrap_GetAnalogActionOrigins = cpp.Lib.load("steamwrap", "SteamWrap_GetAnalogActionOrigins", 3);
-			SteamWrap_InitControllers = cpp.Lib.load("steamwrap", "SteamWrap_InitControllers", 0);
+			SteamWrap_InitControllers = cpp.Lib.load("steamwrap", "SteamWrap_InitControllers", 1);
 			SteamWrap_ShowBindingPanel = cpp.Lib.load("steamwrap", "SteamWrap_ShowBindingPanel", 1);
-			SteamWrap_GetGlyphForActionOrigin = cpp.Lib.load("steamwrap", "SteamWrap_GetGlyphForActionOrigin", 1);
+			SteamWrap_GetGlyphPNGForActionOrigin = cpp.Lib.load("steamwrap", "SteamWrap_GetGlyphPNGForActionOrigin", 3);
+			SteamWrap_GetGlyphForActionOrigin_Legacy = cpp.Lib.load("steamwrap", "SteamWrap_GetGlyphForActionOrigin_Legacy", 1);
 			SteamWrap_GetStringForActionOrigin = cpp.Lib.load("steamwrap", "SteamWrap_GetStringForActionOrigin", 1);
 			SteamWrap_ShutdownControllers = cpp.Lib.load("steamwrap", "SteamWrap_ShutdownControllers", 0);
 
@@ -563,7 +576,7 @@ class Controller {
 
 		// if we get this far, the dlls loaded ok and we need Steam controllers to init.
 		// otherwise, we're trying to run the Steam version without the Steam client
-		active = SteamWrap_InitControllers();
+		active = SteamWrap_InitControllers(false);
 		#end
 	}
 
@@ -671,6 +684,13 @@ class ControllerMotionData {
 class ESteamInputLEDFlags {
 	public static inline var SET_COLOR = 0x00;
 	public static inline var RESTORE_USER_DEFAULT = 0x01;
+}
+
+class ESteamInputGlyphSize {
+	public static inline var SMALL = 0;
+	public static inline var MEDIUM = 1;
+	public static inline var LARGE = 2;
+	public static inline var COUNT = 3;
 }
 
 enum abstract EInputActionOrigin(Int) {
