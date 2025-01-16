@@ -941,17 +941,6 @@ DEFINE_PRIM(SteamWrap_RunCallbacks, 0);
 
 #pragma region Stats
 //-----------------------------------------------------------------------------------------------------------
-value SteamWrap_RequestStats()
-{
-	if (!CheckInit())
-		return alloc_bool(false);
-
-	bool result = SteamUserStats()->RequestCurrentStats();
-	return alloc_bool(result);
-}
-DEFINE_PRIM(SteamWrap_RequestStats, 0);
-
-//-----------------------------------------------------------------------------------------------------------
 value SteamWrap_GetStat(value name)
 {
 	if (!val_is_string(name)|| !CheckInit())
@@ -2742,7 +2731,7 @@ value SteamWrap_GetGlyphSVGForActionOrigin(value origin, int flags)
 	const char * result = SteamInput()->GetGlyphSVGForActionOrigin(eOrigin, nFlags);
 	return alloc_string(result);
 }
-DEFINE_PRIM(SteamWrap_GetGlyphSVGForActionOrigin,3);
+DEFINE_PRIM(SteamWrap_GetGlyphSVGForActionOrigin,2);
 
 //-----------------------------------------------------------------------------------------------------------
 value SteamWrap_GetGlyphForActionOrigin_Legacy(value origin)
@@ -2787,13 +2776,13 @@ value SteamWrap_GetStringForActionOrigin(value origin)
 DEFINE_PRIM(SteamWrap_GetStringForActionOrigin,1);
 
 //----------------------------------------------------------------------------------------------------------
-value GetStringForAnalogActionName(value actionHandle)
+value SteamWrap_GetStringForAnalogActionName(value actionHandle)
 {
 	InputAnalogActionHandle_t a_handle = val_int(actionHandle);
 	const char * result = SteamInput()->GetStringForAnalogActionName(a_handle);
 	return alloc_string(result);
 }
-DEFINE_PRIM(GetStringForAnalogActionName,1);
+DEFINE_PRIM(SteamWrap_GetStringForAnalogActionName,1);
 
 //----------------------------------------------------------------------------------------------------------
 int SteamWrap_ActivateActionSet(int controllerHandle, int actionSetHandle)

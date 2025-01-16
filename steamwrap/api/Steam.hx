@@ -127,7 +127,6 @@ class Steam {
 			SteamWrap_IsOverlayEnabled = cpp.Lib.load("steamwrap", "SteamWrap_IsOverlayEnabled", 0);
 			SteamWrap_IsSteamRunningOnSteamDeck = cpp.Lib.load("steamwrap", "SteamWrap_IsSteamRunningOnSteamDeck", 0);
 			SteamWrap_BOverlayNeedsPresent = cpp.Lib.load("steamwrap", "SteamWrap_BOverlayNeedsPresent", 0);
-			SteamWrap_RequestStats = cpp.Lib.load("steamwrap", "SteamWrap_RequestStats", 0);
 			SteamWrap_RunCallbacks = cpp.Lib.load("steamwrap", "SteamWrap_RunCallbacks", 0);
 			SteamWrap_SetAchievement = cpp.Lib.load("steamwrap", "SteamWrap_SetAchievement", 1);
 			SteamWrap_GetAchievement = cpp.Lib.load("steamwrap", "SteamWrap_GetAchievement", 1);
@@ -158,7 +157,6 @@ class Steam {
 
 		if (active) {
 			customTrace("Steam active");
-			SteamWrap_RequestStats();
 			SteamWrap_RequestGlobalStats();
 
 			// initialize other API's:
@@ -649,7 +647,6 @@ class Steam {
 	private static var SteamWrap_Init:Dynamic;
 	private static var SteamWrap_Shutdown:Dynamic;
 	private static var SteamWrap_RunCallbacks:Dynamic;
-	private static var SteamWrap_RequestStats:Dynamic;
 	private static var SteamWrap_GetStat:Dynamic;
 	private static var SteamWrap_GetStatFloat:Dynamic;
 	private static var SteamWrap_GetStatInt:Dynamic;
