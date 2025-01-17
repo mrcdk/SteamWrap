@@ -176,7 +176,7 @@ static const char* kEventGameOverlayActivated = "GameOverlayActivated";
 //0-based index values which easily fit into a regular int.
 class steamHandleMap
 {
-	//TODO: figure out templating or whatever so I can make typed versions of this like in Haxe (steamHandleMap<ControllerHandle_t>)
+	//TODO: figure out templating or whatever so I can make typed versions of this like in Haxe (steamHandleMap<InputHandle_t>)
 	//      all the steam handle typedefs are just renamed uint64's, but this could always change so to be 100% super safe I should
 	//      figure out the templating stuff.
 	
@@ -271,7 +271,7 @@ static void SendEvent(const Event& e)
 
 // static uint64 valStrToHandle(value str)
 // {
-	// ControllerHandle_t c_handle;
+	// InputHandle_t c_handle;
 	// sscanf(val_string(str), "%I64x", &c_handle);
 	// return c_handle;
 // }
@@ -2458,7 +2458,7 @@ value SteamWrap_ShowBindingPanel(value controllerHandle)
 	
 	int i_handle = val_int(controllerHandle);
 	
-	ControllerHandle_t c_handle = i_handle != -1 ? mapControllers.get(i_handle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
+	InputHandle_t c_handle = i_handle != -1 ? mapControllers.get(i_handle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
 	
 	bool result = SteamInput()->ShowBindingPanel(c_handle);
 	
@@ -2503,7 +2503,7 @@ value SteamWrap_GetConnectedControllers()
 {
 	SteamInput()->RunFrame();
 	
-	ControllerHandle_t handles[STEAM_INPUT_MAX_COUNT];
+	InputHandle_t handles[STEAM_INPUT_MAX_COUNT];
 	int result = SteamInput()->GetConnectedControllers(handles);
 	
 	std::ostringstream returnData;
@@ -2517,6 +2517,7 @@ value SteamWrap_GetConnectedControllers()
 		if(index < 0)
 		{
 			index = mapControllers.add(handles[i]);
+			printf("index - steam_handle => %d - %lld\n", index, handles[i]);
 		}
 		
 		
@@ -2563,7 +2564,7 @@ DEFINE_PRIME1(SteamWrap_GetAnalogActionHandle);
 //-----------------------------------------------------------------------------------------------------------
 int SteamWrap_GetDigitalActionData(int controllerHandle, int actionHandle)
 {
-	ControllerHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
+	InputHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
 	ControllerDigitalActionHandle_t a_handle = actionHandle;
 	
 	ControllerDigitalActionData_t data = SteamInput()->GetDigitalActionData(c_handle, a_handle);
@@ -2591,7 +2592,7 @@ DEFINE_PRIME2(SteamWrap_GetDigitalActionData);
 
 int SteamWrap_GetAnalogActionData(int controllerHandle, int actionHandle)
 {
-	ControllerHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
+	InputHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
 	ControllerAnalogActionHandle_t a_handle = actionHandle;
 	
 	analogActionData = SteamInput()->GetAnalogActionData(c_handle, a_handle);
@@ -2621,7 +2622,7 @@ DEFINE_PRIME1(SteamWrap_GetAnalogActionData_y);
 //-----------------------------------------------------------------------------------------------------------
 value SteamWrap_GetDigitalActionOrigins(value controllerHandle, value actionSetHandle, value digitalActionHandle)
 {
-	ControllerHandle_t c_handle              = mapControllers.get(val_int(controllerHandle));
+	InputHandle_t c_handle              = mapControllers.get(val_int(controllerHandle));
 	ControllerActionSetHandle_t s_handle     = val_int(actionSetHandle);
 	ControllerDigitalActionHandle_t a_handle = val_int(digitalActionHandle);
 	
@@ -2652,7 +2653,7 @@ DEFINE_PRIM(SteamWrap_GetDigitalActionOrigins,3);
 //-----------------------------------------------------------------------------------------------------------
 value SteamWrap_GetAnalogActionOrigins(value controllerHandle, value actionSetHandle, value analogActionHandle)
 {
-	ControllerHandle_t c_handle              = mapControllers.get(val_int(controllerHandle));
+	InputHandle_t c_handle              = mapControllers.get(val_int(controllerHandle));
 	ControllerActionSetHandle_t s_handle     = val_int(actionSetHandle);
 	ControllerAnalogActionHandle_t a_handle  = val_int(analogActionHandle);
 	
@@ -2795,7 +2796,7 @@ DEFINE_PRIM(SteamWrap_GetStringForAnalogActionName,1);
 //----------------------------------------------------------------------------------------------------------
 int SteamWrap_ActivateActionSet(int controllerHandle, int actionSetHandle)
 {
-	ControllerHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
+	InputHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
 	ControllerActionSetHandle_t a_handle = actionSetHandle;
 	
 	SteamInput()->ActivateActionSet(c_handle, a_handle);
@@ -2807,7 +2808,7 @@ DEFINE_PRIME2(SteamWrap_ActivateActionSet);
 //-----------------------------------------------------------------------------------------------------------
 int SteamWrap_GetCurrentActionSet(int controllerHandle)
 {
-	ControllerHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
+	InputHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
 	ControllerActionSetHandle_t a_handle = SteamInput()->GetCurrentActionSet(c_handle);
 	
 	return a_handle;
@@ -2816,7 +2817,7 @@ DEFINE_PRIME1(SteamWrap_GetCurrentActionSet);
 
 void SteamWrap_TriggerHapticPulse(int controllerHandle, int targetPad, int durationMicroSec)
 {
-	ControllerHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
+	InputHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
 	ESteamControllerPad eTargetPad;
 	switch(targetPad)
 	{
@@ -2832,7 +2833,7 @@ DEFINE_PRIME3v(SteamWrap_TriggerHapticPulse);
 
 void SteamWrap_TriggerRepeatedHapticPulse(int controllerHandle, int targetPad, int durationMicroSec, int offMicroSec, int repeat, int flags)
 {
-	ControllerHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
+	InputHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
 	ESteamControllerPad eTargetPad;
 	switch(targetPad)
 	{
@@ -2851,14 +2852,14 @@ DEFINE_PRIME6v(SteamWrap_TriggerRepeatedHapticPulse);
 
 void SteamWrap_TriggerVibration(int controllerHandle, int leftSpeed, int rightSpeed)
 {
-	ControllerHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
+	InputHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
 	SteamInput()->TriggerVibration(c_handle, (unsigned short)leftSpeed, (unsigned short)rightSpeed);
 }
 DEFINE_PRIME3v(SteamWrap_TriggerVibration);
 
 void SteamWrap_SetLEDColor(int controllerHandle, int r, int g, int b, int flags)
 {
-	ControllerHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
+	InputHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
 	SteamInput()->SetLEDColor(c_handle, (uint8)r, (uint8)g, (uint8)b, (unsigned int) flags);
 }
 DEFINE_PRIME5v(SteamWrap_SetLEDColor);
@@ -2869,7 +2870,7 @@ DEFINE_PRIME5v(SteamWrap_SetLEDColor);
 
 void SteamWrap_GetMotionData(int controllerHandle)
 {
-	ControllerHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
+	InputHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
 	motionData = SteamInput()->GetMotionData(c_handle);
 }
 DEFINE_PRIME1v(SteamWrap_GetMotionData);
@@ -2938,7 +2939,7 @@ int SteamWrap_ShowDigitalActionOrigins(int controllerHandle, int digitalActionHa
 {
 	//Deprecated for now until I refactor the API to fix according to Valve's changes	
 	/*
-	ControllerHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
+	InputHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
 	return SteamInput()->ShowDigitalActionOrigins(c_handle, digitalActionHandle, scale, xPosition, yPosition);
 	*/
 	return 0;
@@ -2949,7 +2950,7 @@ int SteamWrap_ShowAnalogActionOrigins(int controllerHandle, int analogActionHand
 {
 	//Deprecated for now until I refactor the API to fix according to Valve's changes
 	/*
-	ControllerHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
+	InputHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
 	return SteamInput()->ShowAnalogActionOrigins(c_handle, analogActionHandle, scale, xPosition, yPosition);
 	*/
 	return 0;
