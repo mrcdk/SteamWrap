@@ -85,6 +85,7 @@ class Steam {
 	public static var whenTrace:String->Void;
 	public static var whenUGCItemIdReceived:String->Void;
 	public static var whenUGCItemUpdateComplete:Bool->String->Void;
+	public static var whenGameOverlayActivated:Bool->Void;
 
 	public static var whenRemoteStorageFileShared:Bool->String->Void;
 	public static var whenUserSharedWorkshopFilesEnumerated:Bool->EnumerateUserPublishedFilesResult->Void;
@@ -534,6 +535,12 @@ class Steam {
 					} else {
 						whenGamepadTextInputDismissed(null);
 					}
+				}
+
+			case "GameOverlayActivated":
+				if(whenGameOverlayActivated != null) {
+					// success is true when showing and false when hiding
+					whenGameOverlayActivated(success);
 				}
 
 			case "GlobalStatsReceived":
