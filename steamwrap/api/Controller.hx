@@ -441,13 +441,15 @@ class Controller {
 	}
 
 	public function getGamepadIndexForController(controller:Int):Int {
-		// TODO
-		return -1;
+		return SteamWrap_GetGamepadIndexForController.call(controller);
 	}
 
 	public function getControllerForGamepadIndex(index:Int):Int {
-		// TODO
-		return -1;
+		return SteamWrap_GetControllerForGamepadIndex.call(index);
+	}
+
+	public function getInputTypeForHandle(controller:Int):ESteamInputType {
+		return cast SteamWrap_GetInputTypeForHandle.call(controller);
 	}
 
 	/**
@@ -560,6 +562,9 @@ class Controller {
 	private var SteamWrap_GetMotionData_rotVelZ = Loader.load("SteamWrap_GetMotionData_rotVelZ", "ii");
 	private var SteamWrap_ShowDigitalActionOrigins = Loader.load("SteamWrap_ShowDigitalActionOrigins", "iifffi");
 	private var SteamWrap_ShowAnalogActionOrigins = Loader.load("SteamWrap_ShowAnalogActionOrigins", "iifffi");
+	private var SteamWrap_GetGamepadIndexForController = Loader.load("SteamWrap_GetGamepadIndexForController", "ii");
+	private var SteamWrap_GetControllerForGamepadIndex = Loader.load("SteamWrap_GetControllerForGamepadIndex", "ii");
+	private var SteamWrap_GetInputTypeForHandle = Loader.load("SteamWrap_GetInputTypeForHandle", "ii");
 
 	private function new(CustomTrace:String->Void) {
 		customTrace = CustomTrace;
@@ -1115,4 +1120,22 @@ enum abstract EGamepadTextInputLineMode(Int) {
 enum abstract EGamepadTextInputMode(Int) {
 	public var NORMAL = 0;
 	public var PASSWORD = 1;
+}
+
+enum abstract ESteamInputType(Int) {
+	var Unknown;
+	var SteamController;
+	var XBox360Controller;
+	var XBoxOneController;
+	var GenericGamepad;		// DirectInput controllers
+	var PS4Controller;
+	var AppleMFiController;	// Unused
+	var AndroidController;	// Unused
+	var SwitchJoyConPair;		// Unused
+	var SwitchJoyConSingle;	// Unused
+	var SwitchProController;
+	var MobileTouch;			// Steam Link App On-screen Virtual Controller
+	var PS3Controller;		// Currently uses PS4 Origins
+	var PS5Controller;		// Added in SDK 151
+	var SteamDeckController;	// Added in SDK 153
 }

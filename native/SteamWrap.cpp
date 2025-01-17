@@ -2536,6 +2536,33 @@ value SteamWrap_GetConnectedControllers()
 DEFINE_PRIM(SteamWrap_GetConnectedControllers,0);
 
 //-----------------------------------------------------------------------------------------------------------
+int SteamWrap_GetGamepadIndexForController(int controllerHandle)
+{
+	InputHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
+	
+	return SteamInput()->GetGamepadIndexForController(c_handle);
+}
+DEFINE_PRIME1(SteamWrap_GetGamepadIndexForController);
+
+//-----------------------------------------------------------------------------------------------------------
+int SteamWrap_GetControllerForGamepadIndex(int index)
+{
+	InputHandle_t c_handle = SteamInput()->GetControllerForGamepadIndex(index);
+
+	return mapControllers.find(c_handle);
+}
+DEFINE_PRIME1(SteamWrap_GetControllerForGamepadIndex);
+
+//-----------------------------------------------------------------------------------------------------------
+int SteamWrap_GetInputTypeForHandle(int controllerHandle)
+{
+	InputHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
+	
+	return SteamInput()->GetInputTypeForHandle(c_handle);
+}
+DEFINE_PRIME1(SteamWrap_GetInputTypeForHandle);
+
+//-----------------------------------------------------------------------------------------------------------
 int SteamWrap_GetActionSetHandle(const char * actionSetName)
 {
 
