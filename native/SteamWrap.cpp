@@ -2517,7 +2517,6 @@ value SteamWrap_GetConnectedControllers()
 		if(index < 0)
 		{
 			index = mapControllers.add(handles[i]);
-			printf("index - steam_handle => %d - %lld\n", index, handles[i]);
 		}
 		
 		
