@@ -379,7 +379,7 @@ void CallbackHandler::OnGamepadTextInputDismissed( GamepadTextInputDismissed_t *
 
 void CallbackHandler::OnGameOverlayActivated( GameOverlayActivated_t *pCallback )
 {
-	SendEvent(Event(kEventTypeOnGamepadTextInputDismissed, pCallback->m_bActive));
+	SendEvent(Event(kEventGameOverlayActivated, pCallback->m_bActive));
 }
 
 void CallbackHandler::OnUserStatsReceived( UserStatsReceived_t *pCallback )
