@@ -30,10 +30,43 @@ enum abstract SteamNotificationPosition(Int) to Int {
 	var BottomLeft = 3;
 }
 
-typedef ControllerHandle = Int64;
-typedef ControllerActionSetHandle = Int;
-typedef ControllerDigitalActionHandle = Int;
-typedef ControllerAnalogActionHandle = Int;
+typedef InputHandle = Int64;
+typedef InputActionSetHandle = Int;
+typedef InputDigitalActionHandle = Int;
+typedef InputAnalogActionHandle = Int;
+
+typedef GamepadSlotChangeResult = {
+	handle:InputHandle,
+	app_id:Int,
+	device_type:Controller.ESteamInputType,
+	old_slot:Int,
+	new_slot:Int,
+};
+
+typedef InputActionEventResult = {
+	input_handle:InputHandle,
+	type:Controller.ESteamInputActionEventType,
+}
+
+typedef InputDigitalActionEventResult = {
+	> InputActionEventResult,
+	event: {
+		action_handle:InputDigitalActionHandle,
+		active:Bool,
+		state:Bool,
+	}
+}
+
+typedef InputAnalogActionEventResult = {
+	> InputActionEventResult,
+	event: {
+		action_handle:InputAnalogActionHandle,
+		source:Controller.EInputSourceMode,
+		active:Bool,
+		x:Float,
+		y:Float,
+	}
+}
 
 class Steam {
 	/*************PUBLIC***************/
@@ -87,6 +120,12 @@ class Steam {
 	public static var whenUGCItemUpdateComplete:Bool->String->Void;
 	public static var whenGameOverlayActivated:Bool->Void;
 
+	public static var whenInputDeviceConnected:Int->Void;
+	public static var whenInputDeviceDisconnected:Int->Void;
+	public static var whenInputGamepadSlotChanged:GamepadSlotChangeResult->Void;
+	public static var whenInputDigitalActionEventEmitted:InputDigitalActionEventResult->Void;
+	public static var whenInputAnalogActionEventEmitted:InputAnalogActionEventResult->Void;
+
 	public static var whenRemoteStorageFileShared:Bool->String->Void;
 	public static var whenUserSharedWorkshopFilesEnumerated:Bool->EnumerateUserPublishedFilesResult->Void;
 	public static var whenPublishedWorkshopFilesEnumerated:Bool->EnumerateWorkshopFilesResult->Void;
@@ -103,7 +142,7 @@ class Steam {
 	 * @param appId_	Your Steam APP ID (the numbers on the end of your store page URL - store.steampowered.com/app/XYZ)
 	 * @param notificationPosition	The position of the Steam Overlay Notification box.
 	 */
-	public static function init(appId_:Int, notificationPosition:SteamNotificationPosition = SteamNotificationPosition.BottomRight) {
+	public static function init(appId_:Int, notificationPosition:SteamNotificationPosition = SteamNotificationPosition.BottomRight, enableControllerCallbacks:Bool = false) {
 		#if sys // TODO: figure out what targets this will & won't work with and upate this guard
 		if (active)
 			return;
@@ -162,7 +201,7 @@ class Steam {
 
 			// initialize other API's:
 			ugc = new UGC(appId, customTrace);
-			controllers = new Controller(customTrace);
+			controllers = new Controller(appId, customTrace, enableControllerCallbacks);
 			cloud = new Cloud(appId, customTrace);
 			workshop = new Workshop(appId, customTrace);
 			networking = new Networking(appId, customTrace);
@@ -541,6 +580,31 @@ class Steam {
 				if(whenGameOverlayActivated != null) {
 					// success is true when showing and false when hiding
 					whenGameOverlayActivated(success);
+				}
+
+			case "InputDeviceConnected":
+				if(whenInputDeviceConnected != null) {
+					whenInputDeviceConnected(obj.handle);
+				}
+			
+			case "InputDeviceDisconnected":
+				if(whenInputDeviceDisconnected != null) {
+					whenInputDeviceDisconnected(obj.handle);
+				}
+
+			case "InputGamepadSlotChanged":
+				if(whenInputGamepadSlotChanged != null) {
+					whenInputGamepadSlotChanged(obj);
+				}
+
+			case "InputDigitalActionEventEmitted":
+				if(whenInputDigitalActionEventEmitted != null) {
+					whenInputDigitalActionEventEmitted(obj);
+				}
+
+			case "InputAnalogActionEventEmitted":
+				if(whenInputAnalogActionEventEmitted != null) {
+					whenInputAnalogActionEventEmitted(obj);
 				}
 
 			case "GlobalStatsReceived":

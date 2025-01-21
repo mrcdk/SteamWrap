@@ -170,6 +170,12 @@ static const char* kEventTypeOnLobbyCreated = "LobbyCreated";
 static const char* kEventTypeOnLobbyListReceived = "LobbyListReceived";
 static const char* kEventGameOverlayActivated = "GameOverlayActivated";
 
+static const char* kEventInputDeviceConnected = "InputDeviceConnected";
+static const char* kEventInputDeviceDisconnected = "InputDeviceDisconnected";
+static const char* kEventInputGamepadSlotChanged = "InputGamepadSlotChanged";
+static const char* kEventInputDigitalActionEventEmitted = "InputDigitalActionEventEmitted";
+static const char* kEventInputAnalogActionEventEmitted = "InputAnalogActionEventEmitted";
+
 //A simple data structure that holds on to the native 64-bit handles and maps them to regular ints.
 //This is because it is cumbersome to pass back 64-bit values over CFFI, and strictly speaking, the haxe 
 //side never needs to know the actual values. So we just store the full 64-bit values locally and pass back 
@@ -232,6 +238,11 @@ class steamHandleMap
 			
 			return maxKey;
 		}
+
+		bool remove(int index)
+		{
+			return values.erase(index) > 0;
+		}
 };
 
 static steamHandleMap mapControllers;
@@ -293,7 +304,11 @@ public:
 		m_CallbackGamepadTextInputDismissed( this, &CallbackHandler::OnGamepadTextInputDismissed ),
 		m_CallbackDownloadItemResult( this, &CallbackHandler::OnDownloadItem ),
 		m_CallbackItemInstalled( this, &CallbackHandler::OnItemInstalled ),
-		m_CallbackGameOverlayActivated( this, &CallbackHandler::OnGameOverlayActivated)
+		m_CallbackGameOverlayActivated( this, &CallbackHandler::OnGameOverlayActivated),
+		m_CallbackInputDeviceConnected( this, &CallbackHandler::OnInputDeviceConnected),
+		m_CallbackInputDeviceDisconnected( this, &CallbackHandler::OnInputDeviceDisconnected),
+		m_CallbackInputGamepadSlotChanged( this, &CallbackHandler::OnInputGamepadSlotChanged),
+		m_CallbackSteamInputConfigurationLoaded( this, &CallbackHandler::OnSteamInputConfigurationLoaded)
 	{}
 
 	STEAM_CALLBACK( CallbackHandler, OnUserStatsReceived, UserStatsReceived_t, m_CallbackUserStatsReceived );
@@ -304,6 +319,11 @@ public:
 	STEAM_CALLBACK( CallbackHandler, OnItemInstalled, ItemInstalled_t, m_CallbackItemInstalled );
 	STEAM_CALLBACK( CallbackHandler, OnLobbyJoinRequested, GameLobbyJoinRequested_t );
 	STEAM_CALLBACK( CallbackHandler, OnGameOverlayActivated, GameOverlayActivated_t, m_CallbackGameOverlayActivated );
+	STEAM_CALLBACK( CallbackHandler, OnInputDeviceConnected, SteamInputDeviceConnected_t, m_CallbackInputDeviceConnected );
+	STEAM_CALLBACK( CallbackHandler, OnInputDeviceDisconnected, SteamInputDeviceDisconnected_t, m_CallbackInputDeviceDisconnected );
+	STEAM_CALLBACK( CallbackHandler, OnInputGamepadSlotChanged, SteamInputGamepadSlotChange_t, m_CallbackInputGamepadSlotChanged );
+	STEAM_CALLBACK( CallbackHandler, OnSteamInputConfigurationLoaded, SteamInputConfigurationLoaded_t, m_CallbackSteamInputConfigurationLoaded );
+	
 	
 	void FindLeaderboard(const char* name);
 	void OnLeaderboardFound( LeaderboardFindResult_t *pResult, bool bIOFailure);
@@ -380,6 +400,94 @@ void CallbackHandler::OnGamepadTextInputDismissed( GamepadTextInputDismissed_t *
 void CallbackHandler::OnGameOverlayActivated( GameOverlayActivated_t *pCallback )
 {
 	SendEvent(Event(kEventGameOverlayActivated, pCallback->m_bActive));
+}
+
+void CallbackHandler::OnInputDeviceConnected( SteamInputDeviceConnected_t *pCallback )
+{
+
+	InputHandle_t handle = pCallback->m_ulConnectedDeviceHandle;
+	int index = mapControllers.find(handle);
+	
+	if(index < 0)
+	{
+		index = mapControllers.add(handle);
+	}
+
+	value obj = alloc_empty_object();
+	alloc_field(obj, val_id("handle"), alloc_int(index));
+	
+
+	SendEvent(Event(kEventInputDeviceConnected, true, obj));
+}
+
+void CallbackHandler::OnInputDeviceDisconnected( SteamInputDeviceDisconnected_t *pCallback )
+{
+
+	InputHandle_t handle = pCallback->m_ulDisconnectedDeviceHandle;
+	int index = mapControllers.find(handle);
+	
+	bool result = false;
+	if(index > -1)
+	{
+		result = mapControllers.remove(index);
+	}
+
+	value obj = alloc_empty_object();
+	alloc_field(obj, val_id("handle"), alloc_int(index));
+	
+
+	SendEvent(Event(kEventInputDeviceDisconnected, result, obj));
+}
+
+void CallbackHandler::OnInputGamepadSlotChanged( SteamInputGamepadSlotChange_t *pCallback )
+{
+
+	InputHandle_t handle = pCallback->m_ulDeviceHandle;
+	int index = mapControllers.find(handle);
+	
+	if(index < 0)
+	{
+		index = mapControllers.add(handle);
+	}
+
+	value obj = alloc_empty_object();
+	alloc_field(obj, val_id("handle"), alloc_int(index));
+	alloc_field(obj, val_id("app_id"), alloc_int(pCallback->m_unAppID));
+	alloc_field(obj, val_id("device_type"), alloc_int(pCallback->m_eDeviceType));
+	alloc_field(obj, val_id("old_slot"), alloc_int(pCallback->m_nOldGamepadSlot));
+	alloc_field(obj, val_id("new_slot"), alloc_int(pCallback->m_nNewGamepadSlot));
+
+
+	SendEvent(Event(kEventInputGamepadSlotChanged, true, obj));
+}
+
+void CallbackHandler::OnSteamInputConfigurationLoaded( SteamInputConfigurationLoaded_t *pCallback )
+{
+
+	if(pCallback->m_bUsesGamepadAPI) {
+		printf("Using xinput\n");
+	}
+	if(pCallback->m_bUsesSteamInputAPI) {
+		printf("Using steam input\n");
+	}
+
+	// InputHandle_t handle = pCallback->m_ulDeviceHandle;
+	// int index = mapControllers.find(handle);
+	
+	// if(index < 0)
+	// {
+	// 	index = mapControllers.add(handle);
+	// }
+
+	// value obj = alloc_empty_object();
+	// alloc_field(obj, val_id("handle"), alloc_int(index));
+	// alloc_field(obj, val_id("app_id"), alloc_int(pCallback->m_unAppID));
+	// alloc_field(obj, val_id("device_type"), alloc_int(pCallback->m_eDeviceType));
+	// alloc_field(obj, val_id("old_slot"), alloc_int(pCallback->m_nOldGamepadSlot));
+	// alloc_field(obj, val_id("new_slot"), alloc_int(pCallback->m_nNewGamepadSlot));
+
+
+	// SendEvent(Event(kEventInputGamepadSlotChanged, true, obj));
 }
 
 void CallbackHandler::OnUserStatsReceived( UserStatsReceived_t *pCallback )
@@ -2418,7 +2526,51 @@ DEFINE_PRIME1(SteamWrap_SetLobbyType);
 //STEAM CONTROLLER-------------------------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------------------------------------
-value SteamWrap_InitControllers(bool explicitlyCallRunFrame )
+
+void actionEventCallback(SteamInputActionEvent_t* event)
+{
+	InputHandle_t handle = event->controllerHandle;
+	int index = mapControllers.find(handle);
+	
+	if(index < 0)
+	{
+		index = mapControllers.add(handle);
+	}
+
+	value data = alloc_empty_object();
+	const char* eventEmitted;
+	switch(event->eEventType) {
+		case ESteamInputActionEventType_DigitalAction: {
+			eventEmitted = kEventInputDigitalActionEventEmitted;
+			alloc_field(data, val_id("action_handle"), alloc_int(event->digitalAction.actionHandle));
+			alloc_field(data, val_id("active"), alloc_bool(event->digitalAction.digitalActionData.bActive));
+			alloc_field(data, val_id("state"), alloc_bool(event->digitalAction.digitalActionData.bState));
+			break;
+		}
+		case ESteamInputActionEventType_AnalogAction: {
+			eventEmitted = kEventInputAnalogActionEventEmitted;
+			alloc_field(data, val_id("action_handle"), alloc_int(event->analogAction.actionHandle));
+			alloc_field(data, val_id("active"), alloc_bool(event->analogAction.analogActionData.bActive));
+			alloc_field(data, val_id("source"), alloc_int(event->analogAction.analogActionData.eMode));
+			alloc_field(data, val_id("x"), alloc_float(event->analogAction.analogActionData.x));
+			alloc_field(data, val_id("y"), alloc_float(event->analogAction.analogActionData.y));
+			break;
+		}
+		default:
+			return;
+	}
+
+	value obj = alloc_empty_object();
+	alloc_field(obj, val_id("handle"), alloc_int(index));
+	alloc_field(obj, val_id("type"), alloc_int(event->eEventType));
+	alloc_field(obj, val_id("event"), data);
+
+
+	SendEvent(Event(eventEmitted, true, obj));
+}
+
+//-----------------------------------------------------------------------------------------------------------
+value SteamWrap_InitControllers(bool explicitlyCallRunFrame, bool enableCallbacks )
 {
 	if (!SteamInput()) return alloc_bool(false);
 
@@ -2432,11 +2584,16 @@ value SteamWrap_InitControllers(bool explicitlyCallRunFrame )
 		analogActionData.x = 0.0;
 		analogActionData.y = 0.0;
 		analogActionData.bActive = false;
+
+		if (enableCallbacks) {
+			SteamInput()->EnableDeviceCallbacks();
+			SteamInput()->EnableActionEventCallbacks(actionEventCallback);
+		}
 	}
 	
 	return alloc_bool(result);
 }
-DEFINE_PRIM(SteamWrap_InitControllers, 1);
+DEFINE_PRIM(SteamWrap_InitControllers, 2);
 
 //-----------------------------------------------------------------------------------------------------------
 value SteamWrap_ShutdownControllers()

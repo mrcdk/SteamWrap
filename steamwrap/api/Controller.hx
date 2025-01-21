@@ -510,6 +510,7 @@ class Controller {
 	}
 
 	/*************PRIVATE***************/
+	private var appId:Int;
 	private var customTrace:String->Void;
 
 	// Old-school CFFI calls:
@@ -566,12 +567,13 @@ class Controller {
 	private var SteamWrap_GetControllerForGamepadIndex = Loader.load("SteamWrap_GetControllerForGamepadIndex", "ii");
 	private var SteamWrap_GetInputTypeForHandle = Loader.load("SteamWrap_GetInputTypeForHandle", "ii");
 
-	private function new(CustomTrace:String->Void) {
+	private function new(appId_:Int, CustomTrace:String->Void, enableCallbacks:Bool) {
+		appId = appId_;
 		customTrace = CustomTrace;
-		init();
+		init(enableCallbacks);
 	}
 
-	private function init() {
+	private function init(enableCallbacks:Bool = false) {
 		#if sys // TODO: figure out what targets this will & won't work with and upate this guard
 
 		if (active)
@@ -583,7 +585,7 @@ class Controller {
 			SteamWrap_GetDigitalActionOrigins = cpp.Lib.load("steamwrap", "SteamWrap_GetDigitalActionOrigins", 3);
 			SteamWrap_GetEnteredGamepadTextInput = cpp.Lib.load("steamwrap", "SteamWrap_GetEnteredGamepadTextInput", 0);
 			SteamWrap_GetAnalogActionOrigins = cpp.Lib.load("steamwrap", "SteamWrap_GetAnalogActionOrigins", 3);
-			SteamWrap_InitControllers = cpp.Lib.load("steamwrap", "SteamWrap_InitControllers", 1);
+			SteamWrap_InitControllers = cpp.Lib.load("steamwrap", "SteamWrap_InitControllers", 2);
 			SteamWrap_ShowBindingPanel = cpp.Lib.load("steamwrap", "SteamWrap_ShowBindingPanel", 1);
 			SteamWrap_GetGlyphPNGForActionOrigin = cpp.Lib.load("steamwrap", "SteamWrap_GetGlyphPNGForActionOrigin", 3);
 			SteamWrap_GetGlyphSVGForActionOrigin = cpp.Lib.load("steamwrap", "SteamWrap_GetGlyphSVGForActionOrigin", 2);
@@ -605,7 +607,7 @@ class Controller {
 
 		// if we get this far, the dlls loaded ok and we need Steam controllers to init.
 		// otherwise, we're trying to run the Steam version without the Steam client
-		active = SteamWrap_InitControllers(false);
+		active = SteamWrap_InitControllers(false, enableCallbacks);
 		#end
 	}
 
@@ -722,171 +724,465 @@ class ESteamInputGlyphSize {
 	public static inline var COUNT = 3;
 }
 
+enum abstract EInputSourceMode(Int) {
+	var None = 0;
+	var Dpad;
+	var Buttons;
+	var FourButtons;
+	var AbsoluteMouse;
+	var RelativeMouse;
+	var JoystickMove;
+	var JoystickMouse;
+	var JoystickCamera;
+	var ScrollWheel;
+	var Trigger;
+	var TouchMenu;
+	var MouseJoystick;
+	var MouseRegion;
+	var RadialMenu;
+	var SingleButton;
+	var Switches;
+}
+
 enum abstract EInputActionOrigin(Int) {
 	public static var fromStringMap(default, null):Map<String, EInputActionOrigin> = MacroHelper.buildMap("steamwrap.api.EInputActionOrigin");
 
 	public static var toStringMap(default, null):Map<EInputActionOrigin, String> = MacroHelper.buildMap("steamwrap.api.EInputActionOrigin", true);
 
-	public var NONE = 0;
+	var None = 0;
 
-	// Valve Steam Controller:
-	public var A = 1;
-	public var B = 2;
-	public var X = 3;
-	public var Y = 4;
-	public var LEFTBUMPER = 5;
-	public var RIGHTBUMPER = 6;
-	public var LEFTGRIP = 7;
-	public var RIGHTGRIP = 8;
-	public var START = 9;
-	public var BACK = 10;
-	public var LEFTPAD_TOUCH = 11;
-	public var LEFTPAD_SWIPE = 12;
-	public var LEFTPAD_CLICK = 13;
-	public var LEFTPAD_DPADNORTH = 14;
-	public var LEFTPAD_DPADSOUTH = 15;
-	public var LEFTPAD_DPADWEST = 16;
-	public var LEFTPAD_DPADEAST = 17;
-	public var RIGHTPAD_TOUCH = 18;
-	public var RIGHTPAD_SWIPE = 19;
-	public var RIGHTPAD_CLICK = 20;
-	public var RIGHTPAD_DPADNORTH = 21;
-	public var RIGHTPAD_DPADSOUTH = 22;
-	public var RIGHTPAD_DPADWEST = 23;
-	public var RIGHTPAD_DPADEAST = 24;
-	public var LEFTTRIGGER_PULL = 25;
-	public var LEFTTRIGGER_CLICK = 26;
-	public var RIGHTTRIGGER_PULL = 27;
-	public var RIGHTTRIGGER_CLICK = 28;
-	public var LEFTSTICK_MOVE = 29;
-	public var LEFTSTICK_CLICK = 30;
-	public var LEFTSTICK_DPADNORTH = 31;
-	public var LEFTSTICK_DPADSOUTH = 32;
-	public var LEFTSTICK_DPADWEST = 33;
-	public var LEFTSTICK_DPADEAST = 34;
-	public var GYRO_MOVE = 35;
-	public var GYRO_PITCH = 36;
-	public var GYRO_YAW = 37;
-	public var GYRO_ROLL = 38;
+	// Steam Controller
+	var SteamController_A;
+	var SteamController_B;
+	var SteamController_X;
+	var SteamController_Y;
+	var SteamController_LeftBumper;
+	var SteamController_RightBumper;
+	var SteamController_LeftGrip;
+	var SteamController_RightGrip;
+	var SteamController_Start;
+	var SteamController_Back;
+	var SteamController_LeftPad_Touch;
+	var SteamController_LeftPad_Swipe;
+	var SteamController_LeftPad_Click;
+	var SteamController_LeftPad_DPadNorth;
+	var SteamController_LeftPad_DPadSouth;
+	var SteamController_LeftPad_DPadWest;
+	var SteamController_LeftPad_DPadEast;
+	var SteamController_RightPad_Touch;
+	var SteamController_RightPad_Swipe;
+	var SteamController_RightPad_Click;
+	var SteamController_RightPad_DPadNorth;
+	var SteamController_RightPad_DPadSouth;
+	var SteamController_RightPad_DPadWest;
+	var SteamController_RightPad_DPadEast;
+	var SteamController_LeftTrigger_Pull;
+	var SteamController_LeftTrigger_Click;
+	var SteamController_RightTrigger_Pull;
+	var SteamController_RightTrigger_Click;
+	var SteamController_LeftStick_Move;
+	var SteamController_LeftStick_Click;
+	var SteamController_LeftStick_DPadNorth;
+	var SteamController_LeftStick_DPadSouth;
+	var SteamController_LeftStick_DPadWest;
+	var SteamController_LeftStick_DPadEast;
+	var SteamController_Gyro_Move;
+	var SteamController_Gyro_Pitch;
+	var SteamController_Gyro_Yaw;
+	var SteamController_Gyro_Roll;
+	var SteamController_Reserved0;
+	var SteamController_Reserved1;
+	var SteamController_Reserved2;
+	var SteamController_Reserved3;
+	var SteamController_Reserved4;
+	var SteamController_Reserved5;
+	var SteamController_Reserved6;
+	var SteamController_Reserved7;
+	var SteamController_Reserved8;
+	var SteamController_Reserved9;
+	var SteamController_Reserved10;
+	
+	// PS4 Dual Shock
+	var PS4_X;
+	var PS4_Circle;
+	var PS4_Triangle;
+	var PS4_Square;
+	var PS4_LeftBumper;
+	var PS4_RightBumper;
+	var PS4_Options;	//Start
+	var PS4_Share;		//Back
+	var PS4_LeftPad_Touch;
+	var PS4_LeftPad_Swipe;
+	var PS4_LeftPad_Click;
+	var PS4_LeftPad_DPadNorth;
+	var PS4_LeftPad_DPadSouth;
+	var PS4_LeftPad_DPadWest;
+	var PS4_LeftPad_DPadEast;
+	var PS4_RightPad_Touch;
+	var PS4_RightPad_Swipe;
+	var PS4_RightPad_Click;
+	var PS4_RightPad_DPadNorth;
+	var PS4_RightPad_DPadSouth;
+	var PS4_RightPad_DPadWest;
+	var PS4_RightPad_DPadEast;
+	var PS4_CenterPad_Touch;
+	var PS4_CenterPad_Swipe;
+	var PS4_CenterPad_Click;
+	var PS4_CenterPad_DPadNorth;
+	var PS4_CenterPad_DPadSouth;
+	var PS4_CenterPad_DPadWest;
+	var PS4_CenterPad_DPadEast;
+	var PS4_LeftTrigger_Pull;
+	var PS4_LeftTrigger_Click;
+	var PS4_RightTrigger_Pull;
+	var PS4_RightTrigger_Click;
+	var PS4_LeftStick_Move;
+	var PS4_LeftStick_Click;
+	var PS4_LeftStick_DPadNorth;
+	var PS4_LeftStick_DPadSouth;
+	var PS4_LeftStick_DPadWest;
+	var PS4_LeftStick_DPadEast;
+	var PS4_RightStick_Move;
+	var PS4_RightStick_Click;
+	var PS4_RightStick_DPadNorth;
+	var PS4_RightStick_DPadSouth;
+	var PS4_RightStick_DPadWest;
+	var PS4_RightStick_DPadEast;
+	var PS4_DPad_North;
+	var PS4_DPad_South;
+	var PS4_DPad_West;
+	var PS4_DPad_East;
+	var PS4_Gyro_Move;
+	var PS4_Gyro_Pitch;
+	var PS4_Gyro_Yaw;
+	var PS4_Gyro_Roll;
+	var PS4_DPad_Move;
+	var PS4_Reserved1;
+	var PS4_Reserved2;
+	var PS4_Reserved3;
+	var PS4_Reserved4;
+	var PS4_Reserved5;
+	var PS4_Reserved6;
+	var PS4_Reserved7;
+	var PS4_Reserved8;
+	var PS4_Reserved9;
+	var PS4_Reserved10;
 
-	// Sony PlayStation DualShock 4:
-	public var PS4_X = 39;
-	public var PS4_CIRCLE = 40;
-	public var PS4_TRIANGLE = 41;
-	public var PS4_SQUARE = 42;
-	public var PS4_LEFTBUMPER = 43;
-	public var PS4_RIGHTBUMPER = 44;
-	public var PS4_OPTIONS = 45;
-	public var PS4_SHARE = 46;
-	public var PS4_LEFTPAD_TOUCH = 47;
-	public var PS4_LEFTPAD_SWIPE = 48;
-	public var PS4_LEFTPAD_CLICK = 49;
-	public var PS4_LEFTPAD_DPADNORTH = 50;
-	public var PS4_LEFTPAD_DPADSOUTH = 51;
-	public var PS4_LEFTPAD_DPADWEST = 52;
-	public var PS4_LEFTPAD_DPADEAST = 53;
-	public var PS4_RIGHTPAD_TOUCH = 54;
-	public var PS4_RIGHTPAD_SWIPE = 55;
-	public var PS4_RIGHTPAD_CLICK = 56;
-	public var PS4_RIGHTPAD_DPADNORTH = 57;
-	public var PS4_RIGHTPAD_DPADSOUTH = 58;
-	public var PS4_RIGHTPAD_DPADWEST = 59;
-	public var PS4_RIGHTPAD_DPADEAST = 60;
-	public var PS4_CENTERPAD_TOUCH = 61;
-	public var PS4_CENTERPAD_SWIPE = 62;
-	public var PS4_CENTERPAD_CLICK = 63;
-	public var PS4_CENTERPAD_DPADNORTH = 64;
-	public var PS4_CENTERPAD_DPADSOUTH = 65;
-	public var PS4_CENTERPAD_DPADWEST = 66;
-	public var PS4_CENTERPAD_DPADEAST = 67;
-	public var PS4_LEFTTRIGGER_PULL = 68;
-	public var PS4_LEFTTRIGGER_CLICK = 69;
-	public var PS4_RIGHTTRIGGER_PULL = 70;
-	public var PS4_RIGHTTRIGGER_CLICK = 71;
-	public var PS4_LEFTSTICK_MOVE = 72;
-	public var PS4_LEFTSTICK_CLICK = 73;
-	public var PS4_LEFTSTICK_DPADNORTH = 74;
-	public var PS4_LEFTSTICK_DPADSOUTH = 75;
-	public var PS4_LEFTSTICK_DPADWEST = 76;
-	public var PS4_LEFTSTICK_DPADEAST = 77;
-	public var PS4_RIGHTSTICK_MOVE = 78;
-	public var PS4_RIGHTSTICK_CLICK = 79;
-	public var PS4_RIGHTSTICK_DPADNORTH = 80;
-	public var PS4_RIGHTSTICK_DPADSOUTH = 81;
-	public var PS4_RIGHTSTICK_DPADWEST = 82;
-	public var PS4_RIGHTSTICK_DPADEAST = 83;
-	public var PS4_DPAD_NORTH = 84;
-	public var PS4_DPAD_SOUTH = 85;
-	public var PS4_DPAD_WEST = 86;
-	public var PS4_DPAD_EAST = 87;
-	public var PS4_GYRO_MOVE = 88;
-	public var PS4_GYRO_PITCH = 89;
-	public var PS4_GYRO_YAW = 90;
-	public var PS4_GYRO_ROLL = 91;
+	// XBox One
+	var XBoxOne_A;
+	var XBoxOne_B;
+	var XBoxOne_X;
+	var XBoxOne_Y;
+	var XBoxOne_LeftBumper;
+	var XBoxOne_RightBumper;
+	var XBoxOne_Menu;  //Start
+	var XBoxOne_View;  //Back
+	var XBoxOne_LeftTrigger_Pull;
+	var XBoxOne_LeftTrigger_Click;
+	var XBoxOne_RightTrigger_Pull;
+	var XBoxOne_RightTrigger_Click;
+	var XBoxOne_LeftStick_Move;
+	var XBoxOne_LeftStick_Click;
+	var XBoxOne_LeftStick_DPadNorth;
+	var XBoxOne_LeftStick_DPadSouth;
+	var XBoxOne_LeftStick_DPadWest;
+	var XBoxOne_LeftStick_DPadEast;
+	var XBoxOne_RightStick_Move;
+	var XBoxOne_RightStick_Click;
+	var XBoxOne_RightStick_DPadNorth;
+	var XBoxOne_RightStick_DPadSouth;
+	var XBoxOne_RightStick_DPadWest;
+	var XBoxOne_RightStick_DPadEast;
+	var XBoxOne_DPad_North;
+	var XBoxOne_DPad_South;
+	var XBoxOne_DPad_West;
+	var XBoxOne_DPad_East;
+	var XBoxOne_DPad_Move;
+	var XBoxOne_LeftGrip_Lower;
+	var XBoxOne_LeftGrip_Upper;
+	var XBoxOne_RightGrip_Lower;
+	var XBoxOne_RightGrip_Upper;
+	var XBoxOne_Share; // Xbox Series X controllers only
+	var XBoxOne_Reserved6;
+	var XBoxOne_Reserved7;
+	var XBoxOne_Reserved8;
+	var XBoxOne_Reserved9;
+	var XBoxOne_Reserved10;
 
-	// Microsoft XBox One:
-	public var XBOXONE_A = 92;
-	public var XBOXONE_B = 93;
-	public var XBOXONE_X = 94;
-	public var XBOXONE_Y = 95;
-	public var XBOXONE_LEFTBUMPER = 96;
-	public var XBOXONE_RIGHTBUMPER = 97;
-	public var XBOXONE_MENU = 98;
-	public var XBOXONE_VIEW = 99;
-	public var XBOXONE_LEFTTRIGGER_PULL = 100;
-	public var XBOXONE_LEFTTRIGGER_CLICK = 101;
-	public var XBOXONE_RIGHTTRIGGER_PULL = 102;
-	public var XBOXONE_RIGHTTRIGGER_CLICK = 103;
-	public var XBOXONE_LEFTSTICK_MOVE = 104;
-	public var XBOXONE_LEFTSTICK_CLICK = 105;
-	public var XBOXONE_LEFTSTICK_DPADNORTH = 106;
-	public var XBOXONE_LEFTSTICK_DPADSOUTH = 107;
-	public var XBOXONE_LEFTSTICK_DPADWEST = 108;
-	public var XBOXONE_LEFTSTICK_DPADEAST = 109;
-	public var XBOXONE_RIGHTSTICK_MOVE = 110;
-	public var XBOXONE_RIGHTSTICK_CLICK = 111;
-	public var XBOXONE_RIGHTSTICK_DPADNORTH = 112;
-	public var XBOXONE_RIGHTSTICK_DPADSOUTH = 113;
-	public var XBOXONE_RIGHTSTICK_DPADWEST = 114;
-	public var XBOXONE_RIGHTSTICK_DPADEAST = 115;
-	public var XBOXONE_DPAD_NORTH = 116;
-	public var XBOXONE_DPAD_SOUTH = 117;
-	public var XBOXONE_DPAD_WEST = 118;
-	public var XBOXONE_DPAD_EAST = 119;
+	// XBox 360
+	var XBox360_A;
+	var XBox360_B;
+	var XBox360_X;
+	var XBox360_Y;
+	var XBox360_LeftBumper;
+	var XBox360_RightBumper;
+	var XBox360_Start;		//Start
+	var XBox360_Back;		//Back
+	var XBox360_LeftTrigger_Pull;
+	var XBox360_LeftTrigger_Click;
+	var XBox360_RightTrigger_Pull;
+	var XBox360_RightTrigger_Click;
+	var XBox360_LeftStick_Move;
+	var XBox360_LeftStick_Click;
+	var XBox360_LeftStick_DPadNorth;
+	var XBox360_LeftStick_DPadSouth;
+	var XBox360_LeftStick_DPadWest;
+	var XBox360_LeftStick_DPadEast;
+	var XBox360_RightStick_Move;
+	var XBox360_RightStick_Click;
+	var XBox360_RightStick_DPadNorth;
+	var XBox360_RightStick_DPadSouth;
+	var XBox360_RightStick_DPadWest;
+	var XBox360_RightStick_DPadEast;
+	var XBox360_DPad_North;
+	var XBox360_DPad_South;
+	var XBox360_DPad_West;
+	var XBox360_DPad_East;	
+	var XBox360_DPad_Move;
+	var XBox360_Reserved1;
+	var XBox360_Reserved2;
+	var XBox360_Reserved3;
+	var XBox360_Reserved4;
+	var XBox360_Reserved5;
+	var XBox360_Reserved6;
+	var XBox360_Reserved7;
+	var XBox360_Reserved8;
+	var XBox360_Reserved9;
+	var XBox360_Reserved10;
 
-	// Microsoft XBox 360:
-	public var XBOX360_A = 120;
-	public var XBOX360_B = 121;
-	public var XBOX360_X = 122;
-	public var XBOX360_Y = 123;
-	public var XBOX360_LEFTBUMPER = 124;
-	public var XBOX360_RIGHTBUMPER = 125;
-	public var XBOX360_START = 126;
-	public var XBOX360_BACK = 127;
-	public var XBOX360_LEFTTRIGGER_PULL = 128;
-	public var XBOX360_LEFTTRIGGER_CLICK = 129;
-	public var XBOX360_RIGHTTRIGGER_PULL = 130;
-	public var XBOX360_RIGHTTRIGGER_CLICK = 131;
-	public var XBOX360_LEFTSTICK_MOVE = 132;
-	public var XBOX360_LEFTSTICK_CLICK = 133;
-	public var XBOX360_LEFTSTICK_DPADNORTH = 134;
-	public var XBOX360_LEFTSTICK_DPADSOUTH = 135;
-	public var XBOX360_LEFTSTICK_DPADWEST = 136;
-	public var XBOX360_LEFTSTICK_DPADEAST = 137;
-	public var XBOX360_RIGHTSTICK_MOVE = 138;
-	public var XBOX360_RIGHTSTICK_CLICK = 139;
-	public var XBOX360_RIGHTSTICK_DPADNORTH = 140;
-	public var XBOX360_RIGHTSTICK_DPADSOUTH = 141;
-	public var XBOX360_RIGHTSTICK_DPADWEST = 142;
-	public var XBOX360_RIGHTSTICK_DPADEAST = 143;
-	public var XBOX360_DPAD_NORTH = 144;
-	public var XBOX360_DPAD_SOUTH = 145;
-	public var XBOX360_DPAD_WEST = 146;
-	public var XBOX360_DPAD_EAST = 147;
 
-	public var COUNT = 148;
+	// Switch - Pro or Joycons used as a single input device.
+	// This does not apply to a single joycon
+	var Switch_A;
+	var Switch_B;
+	var Switch_X;
+	var Switch_Y;
+	var Switch_LeftBumper;
+	var Switch_RightBumper;
+	var Switch_Plus;	//Start
+	var Switch_Minus;	//Back
+	var Switch_Capture;
+	var Switch_LeftTrigger_Pull;
+	var Switch_LeftTrigger_Click;
+	var Switch_RightTrigger_Pull;
+	var Switch_RightTrigger_Click;
+	var Switch_LeftStick_Move;
+	var Switch_LeftStick_Click;
+	var Switch_LeftStick_DPadNorth;
+	var Switch_LeftStick_DPadSouth;
+	var Switch_LeftStick_DPadWest;
+	var Switch_LeftStick_DPadEast;
+	var Switch_RightStick_Move;
+	var Switch_RightStick_Click;
+	var Switch_RightStick_DPadNorth;
+	var Switch_RightStick_DPadSouth;
+	var Switch_RightStick_DPadWest;
+	var Switch_RightStick_DPadEast;
+	var Switch_DPad_North;
+	var Switch_DPad_South;
+	var Switch_DPad_West;
+	var Switch_DPad_East;
+	var Switch_ProGyro_Move;  // Primary Gyro in Pro Controller, or Right JoyCon
+	var Switch_ProGyro_Pitch;  // Primary Gyro in Pro Controller, or Right JoyCon
+	var Switch_ProGyro_Yaw;  // Primary Gyro in Pro Controller, or Right JoyCon
+	var Switch_ProGyro_Roll;  // Primary Gyro in Pro Controller, or Right JoyCon
+	var Switch_DPad_Move;
+	var Switch_Reserved1;
+	var Switch_Reserved2;
+	var Switch_Reserved3;
+	var Switch_Reserved4;
+	var Switch_Reserved5;
+	var Switch_Reserved6;
+	var Switch_Reserved7;
+	var Switch_Reserved8;
+	var Switch_Reserved9;
+	var Switch_Reserved10;
 
-	public var UNKNOWN = -1;
+	// Switch JoyCon Specific
+	var Switch_RightGyro_Move;  // Right JoyCon Gyro generally should correspond to Pro's single gyro
+	var Switch_RightGyro_Pitch;  // Right JoyCon Gyro generally should correspond to Pro's single gyro
+	var Switch_RightGyro_Yaw;  // Right JoyCon Gyro generally should correspond to Pro's single gyro
+	var Switch_RightGyro_Roll;  // Right JoyCon Gyro generally should correspond to Pro's single gyro
+	var Switch_LeftGyro_Move;
+	var Switch_LeftGyro_Pitch;
+	var Switch_LeftGyro_Yaw;
+	var Switch_LeftGyro_Roll;
+	var Switch_LeftGrip_Lower; // Left JoyCon SR Button
+	var Switch_LeftGrip_Upper; // Left JoyCon SL Button
+	var Switch_RightGrip_Lower;  // Right JoyCon SL Button
+	var Switch_RightGrip_Upper;  // Right JoyCon SR Button
+	var Switch_JoyConButton_N; // With a Horizontal JoyCon this will be Y or what would be Dpad Right when vertical
+	var Switch_JoyConButton_E; // X
+	var Switch_JoyConButton_S; // A
+	var Switch_JoyConButton_W; // B
+	var Switch_Reserved15;
+	var Switch_Reserved16;
+	var Switch_Reserved17;
+	var Switch_Reserved18;
+	var Switch_Reserved19;
+	var Switch_Reserved20;
+	
+	// Added in SDK 1.51
+	var PS5_X;
+	var PS5_Circle;
+	var PS5_Triangle;
+	var PS5_Square;
+	var PS5_LeftBumper;
+	var PS5_RightBumper;
+	var PS5_Option;	//Start
+	var PS5_Create;		//Back
+	var PS5_Mute;
+	var PS5_LeftPad_Touch;
+	var PS5_LeftPad_Swipe;
+	var PS5_LeftPad_Click;
+	var PS5_LeftPad_DPadNorth;
+	var PS5_LeftPad_DPadSouth;
+	var PS5_LeftPad_DPadWest;
+	var PS5_LeftPad_DPadEast;
+	var PS5_RightPad_Touch;
+	var PS5_RightPad_Swipe;
+	var PS5_RightPad_Click;
+	var PS5_RightPad_DPadNorth;
+	var PS5_RightPad_DPadSouth;
+	var PS5_RightPad_DPadWest;
+	var PS5_RightPad_DPadEast;
+	var PS5_CenterPad_Touch;
+	var PS5_CenterPad_Swipe;
+	var PS5_CenterPad_Click;
+	var PS5_CenterPad_DPadNorth;
+	var PS5_CenterPad_DPadSouth;
+	var PS5_CenterPad_DPadWest;
+	var PS5_CenterPad_DPadEast;
+	var PS5_LeftTrigger_Pull;
+	var PS5_LeftTrigger_Click;
+	var PS5_RightTrigger_Pull;
+	var PS5_RightTrigger_Click;
+	var PS5_LeftStick_Move;
+	var PS5_LeftStick_Click;
+	var PS5_LeftStick_DPadNorth;
+	var PS5_LeftStick_DPadSouth;
+	var PS5_LeftStick_DPadWest;
+	var PS5_LeftStick_DPadEast;
+	var PS5_RightStick_Move;
+	var PS5_RightStick_Click;
+	var PS5_RightStick_DPadNorth;
+	var PS5_RightStick_DPadSouth;
+	var PS5_RightStick_DPadWest;
+	var PS5_RightStick_DPadEast;
+	var PS5_DPad_North;
+	var PS5_DPad_South;
+	var PS5_DPad_West;
+	var PS5_DPad_East;
+	var PS5_Gyro_Move;
+	var PS5_Gyro_Pitch;
+	var PS5_Gyro_Yaw;
+	var PS5_Gyro_Roll;
+	var PS5_DPad_Move;
+	var PS5_LeftGrip;
+	var PS5_RightGrip;
+	var PS5_LeftFn;
+	var PS5_RightFn;
+	var PS5_Reserved5;
+	var PS5_Reserved6;
+	var PS5_Reserved7;
+	var PS5_Reserved8;
+	var PS5_Reserved9;
+	var PS5_Reserved10;
+	var PS5_Reserved11;
+	var PS5_Reserved12;
+	var PS5_Reserved13;
+	var PS5_Reserved14;
+	var PS5_Reserved15;
+	var PS5_Reserved16;
+	var PS5_Reserved17;
+	var PS5_Reserved18;
+	var PS5_Reserved19;
+	var PS5_Reserved20;
+
+	// Added in SDK 1.53
+	var SteamDeck_A;
+	var SteamDeck_B;
+	var SteamDeck_X;
+	var SteamDeck_Y;
+	var SteamDeck_L1;
+	var SteamDeck_R1;
+	var SteamDeck_Menu;
+	var SteamDeck_View;
+	var SteamDeck_LeftPad_Touch;
+	var SteamDeck_LeftPad_Swipe;
+	var SteamDeck_LeftPad_Click;
+	var SteamDeck_LeftPad_DPadNorth;
+	var SteamDeck_LeftPad_DPadSouth;
+	var SteamDeck_LeftPad_DPadWest;
+	var SteamDeck_LeftPad_DPadEast;
+	var SteamDeck_RightPad_Touch;
+	var SteamDeck_RightPad_Swipe;
+	var SteamDeck_RightPad_Click;
+	var SteamDeck_RightPad_DPadNorth;
+	var SteamDeck_RightPad_DPadSouth;
+	var SteamDeck_RightPad_DPadWest;
+	var SteamDeck_RightPad_DPadEast;
+	var SteamDeck_L2_SoftPull;
+	var SteamDeck_L2;
+	var SteamDeck_R2_SoftPull;
+	var SteamDeck_R2;
+	var SteamDeck_LeftStick_Move;
+	var SteamDeck_L3;
+	var SteamDeck_LeftStick_DPadNorth;
+	var SteamDeck_LeftStick_DPadSouth;
+	var SteamDeck_LeftStick_DPadWest;
+	var SteamDeck_LeftStick_DPadEast;
+	var SteamDeck_LeftStick_Touch;
+	var SteamDeck_RightStick_Move;
+	var SteamDeck_R3;
+	var SteamDeck_RightStick_DPadNorth;
+	var SteamDeck_RightStick_DPadSouth;
+	var SteamDeck_RightStick_DPadWest;
+	var SteamDeck_RightStick_DPadEast;
+	var SteamDeck_RightStick_Touch;
+	var SteamDeck_L4;
+	var SteamDeck_R4;
+	var SteamDeck_L5;
+	var SteamDeck_R5;
+	var SteamDeck_DPad_Move;
+	var SteamDeck_DPad_North;
+	var SteamDeck_DPad_South;
+	var SteamDeck_DPad_West;
+	var SteamDeck_DPad_East;
+	var SteamDeck_Gyro_Move;
+	var SteamDeck_Gyro_Pitch;
+	var SteamDeck_Gyro_Yaw;
+	var SteamDeck_Gyro_Roll;
+	var SteamDeck_Reserved1;
+	var SteamDeck_Reserved2;
+	var SteamDeck_Reserved3;
+	var SteamDeck_Reserved4;
+	var SteamDeck_Reserved5;
+	var SteamDeck_Reserved6;
+	var SteamDeck_Reserved7;
+	var SteamDeck_Reserved8;
+	var SteamDeck_Reserved9;
+	var SteamDeck_Reserved10;
+	var SteamDeck_Reserved11;
+	var SteamDeck_Reserved12;
+	var SteamDeck_Reserved13;
+	var SteamDeck_Reserved14;
+	var SteamDeck_Reserved15;
+	var SteamDeck_Reserved16;
+	var SteamDeck_Reserved17;
+	var SteamDeck_Reserved18;
+	var SteamDeck_Reserved19;
+	var SteamDeck_Reserved20;
+
+	var Horipad_M1;
+	var Horipad_M2;
+	var Horipad_L4;
+	var Horipad_R4;
+
+	var Count; // If Steam has added support for new controllers origins will go here.
+	var MaximumPossibleValue = 32767; // Origins are currently a maximum of 16 bits.
+
+	var UNKNOWN = -1;
 
 	@:from private static function fromString(s:String):EInputActionOrigin {
 		var i = Std.parseInt(s);
@@ -906,174 +1202,6 @@ enum abstract EInputActionOrigin(Int) {
 		}
 
 		return "unknown";
-	}
-
-	/**
-	 * Returns the string name for this glyph so you can load a corresponding image from your assets.
-	 * @param	value the integer value of a controller action origin from the steam API
-	 * @return	a unique string identifier for this glyph, OR "unknown" if the glyph is not known (see Controller.getGlyphForActionOrigin())
-	 */
-	public static function getGlyph(value:EInputActionOrigin):String {
-		return switch (value) {
-			case NONE: "none";
-
-			// Valve Steam Controller:
-			case A: "button_a";
-			case B: "button_b";
-			case X: "button_x";
-			case Y: "button_y";
-			case LEFTBUMPER: "shoulder_l";
-			case RIGHTBUMPER: "shoulder_r";
-			case LEFTGRIP: "grip_l";
-			case RIGHTGRIP: "grip_r";
-			case START: "button_start";
-			case BACK: "button_select";
-			case LEFTPAD_TOUCH: "pad_l_touch";
-			case LEFTPAD_SWIPE: "pad_l_swipe";
-			case LEFTPAD_CLICK: "pad_l_click";
-			case LEFTPAD_DPADNORTH: "pad_l_dpad_n";
-			case LEFTPAD_DPADSOUTH: "pad_l_dpad_s";
-			case LEFTPAD_DPADWEST: "pad_l_dpad_w";
-			case LEFTPAD_DPADEAST: "pad_l_dpad_e";
-			case RIGHTPAD_TOUCH: "pad_r_touch";
-			case RIGHTPAD_SWIPE: "pad_r_swipe";
-			case RIGHTPAD_CLICK: "pad_r_click";
-			case RIGHTPAD_DPADNORTH: "pad_r_dpad_n";
-			case RIGHTPAD_DPADSOUTH: "pad_r_dpad_s";
-			case RIGHTPAD_DPADWEST: "pad_r_dpad_w";
-			case RIGHTPAD_DPADEAST: "pad_r_dpad_e";
-			case LEFTTRIGGER_PULL: "trigger_l_pull";
-			case LEFTTRIGGER_CLICK: "trigger_l_click";
-			case RIGHTTRIGGER_PULL: "trigger_r_pull";
-			case RIGHTTRIGGER_CLICK: "trigger_r_click";
-			case LEFTSTICK_MOVE: "stick_move";
-			case LEFTSTICK_CLICK: "stick_click";
-			case LEFTSTICK_DPADNORTH: "stick_dpad_n";
-			case LEFTSTICK_DPADSOUTH: "stick_dpad_s";
-			case LEFTSTICK_DPADWEST: "stick_dpad_w";
-			case LEFTSTICK_DPADEAST: "stick_dpad_e";
-			case GYRO_MOVE: "gyro";
-			case GYRO_PITCH: "gyro_pitch";
-			case GYRO_YAW: "gyro_yaw";
-			case GYRO_ROLL: "gyro_roll";
-
-			// Sony PlayStation DualShock 4:
-			case PS4_X: "ps4_button_x";
-			case PS4_CIRCLE: "ps4_button_circle";
-			case PS4_TRIANGLE: "ps4_button_triangle";
-			case PS4_SQUARE: "ps4_button_square";
-			case PS4_LEFTBUMPER: "ps4_shoulder_l";
-			case PS4_RIGHTBUMPER: "ps4_shouldr_r";
-			case PS4_OPTIONS: "ps4_button_options";
-			case PS4_SHARE: "ps4_button_share";
-			case PS4_LEFTPAD_TOUCH: "ps4_pad_l_touch";
-			case PS4_LEFTPAD_SWIPE: "ps4_pad_l_swipe";
-			case PS4_LEFTPAD_CLICK: "ps4_pad_l_click";
-			case PS4_LEFTPAD_DPADNORTH: "ps4_pad_l_dpad_n";
-			case PS4_LEFTPAD_DPADSOUTH: "ps4_pad_l_dpad_s";
-			case PS4_LEFTPAD_DPADWEST: "ps4_pad_l_dpad_w";
-			case PS4_LEFTPAD_DPADEAST: "ps4_pad_l_dpad_e";
-			case PS4_RIGHTPAD_TOUCH: "ps4_pard_r_touch";
-			case PS4_RIGHTPAD_SWIPE: "ps4_pad_r_swipe";
-			case PS4_RIGHTPAD_CLICK: "ps4_pad_r_click";
-			case PS4_RIGHTPAD_DPADNORTH: "ps4_pad_r_dpad_n";
-			case PS4_RIGHTPAD_DPADSOUTH: "ps4_pad_r_dpad_s";
-			case PS4_RIGHTPAD_DPADWEST: "ps4_pad_r_dpad_w";
-			case PS4_RIGHTPAD_DPADEAST: "ps4_pad_r_dpad_e";
-			case PS4_CENTERPAD_TOUCH: "ps4_pad_center_touch";
-			case PS4_CENTERPAD_SWIPE: "ps4_pad_center_swipe";
-			case PS4_CENTERPAD_CLICK: "ps4_pad_center_click";
-			case PS4_CENTERPAD_DPADNORTH: "ps4_pad_center_dpad_n";
-			case PS4_CENTERPAD_DPADSOUTH: "ps4_pad_center_dpad_s";
-			case PS4_CENTERPAD_DPADWEST: "ps4_pad_center_dpad_w";
-			case PS4_CENTERPAD_DPADEAST: "ps4_pad_center_dpad_e";
-			case PS4_LEFTTRIGGER_PULL: "ps4_trigger_l_pull";
-			case PS4_LEFTTRIGGER_CLICK: "ps4_trigger_l_click";
-			case PS4_RIGHTTRIGGER_PULL: "ps4_trigger_r_pull";
-			case PS4_RIGHTTRIGGER_CLICK: "ps4_trigger_r_click";
-			case PS4_LEFTSTICK_MOVE: "ps4_stick_l_move";
-			case PS4_LEFTSTICK_CLICK: "ps4_stick_l_click";
-			case PS4_LEFTSTICK_DPADNORTH: "ps4_stick_l_dpad_n";
-			case PS4_LEFTSTICK_DPADSOUTH: "ps4_stick_l_dpad_s";
-			case PS4_LEFTSTICK_DPADWEST: "ps4_stick_l_dpad_w";
-			case PS4_LEFTSTICK_DPADEAST: "ps4_stick_l_dpad_e";
-			case PS4_RIGHTSTICK_MOVE: "ps4_stick_r_move";
-			case PS4_RIGHTSTICK_CLICK: "ps4_stick_r_click";
-			case PS4_RIGHTSTICK_DPADNORTH: "ps4_stick_r_dpad_n";
-			case PS4_RIGHTSTICK_DPADSOUTH: "ps4_stick_r_dpad_s";
-			case PS4_RIGHTSTICK_DPADWEST: "ps4_stick_r_dpad_w";
-			case PS4_RIGHTSTICK_DPADEAST: "ps4_stick_r_dpad_e";
-			case PS4_DPAD_NORTH: "ps4_button_dpad_n";
-			case PS4_DPAD_SOUTH: "ps4_button_dpad_s";
-			case PS4_DPAD_WEST: "ps4_button_dpad_w";
-			case PS4_DPAD_EAST: "ps4_button_dpad_e";
-			case PS4_GYRO_MOVE: "ps4_gyro";
-			case PS4_GYRO_PITCH: "ps4_gyro_pitch";
-			case PS4_GYRO_YAW: "ps4_gyro_yaw";
-			case PS4_GYRO_ROLL: "ps4_gyro_roll";
-
-			// Microsoft XBox One:
-			case XBOXONE_A: "xboxone_button_a";
-			case XBOXONE_B: "xboxone_button_b";
-			case XBOXONE_X: "xboxone_button_x";
-			case XBOXONE_Y: "xboxone_button_y";
-			case XBOXONE_LEFTBUMPER: "xboxone_shoulder_l";
-			case XBOXONE_RIGHTBUMPER: "xboxone_shouldr_r";
-			case XBOXONE_MENU: "xboxone_button_menu";
-			case XBOXONE_VIEW: "xboxone_button_view";
-			case XBOXONE_LEFTTRIGGER_PULL: "xboxone_trigger_l_pull";
-			case XBOXONE_LEFTTRIGGER_CLICK: "xboxone_trigger_l_click";
-			case XBOXONE_RIGHTTRIGGER_PULL: "xboxone_trigger_r_pull";
-			case XBOXONE_RIGHTTRIGGER_CLICK: "xboxone_trigger_r_click";
-			case XBOXONE_LEFTSTICK_MOVE: "xboxone_stick_l_move";
-			case XBOXONE_LEFTSTICK_CLICK: "xboxone_stick_l_click";
-			case XBOXONE_LEFTSTICK_DPADNORTH: "xboxone_stick_l_dpad_n";
-			case XBOXONE_LEFTSTICK_DPADSOUTH: "xboxone_stick_l_dpad_s";
-			case XBOXONE_LEFTSTICK_DPADWEST: "xboxone_stick_l_dpad_w";
-			case XBOXONE_LEFTSTICK_DPADEAST: "xboxone_stick_l_dpad_e";
-			case XBOXONE_RIGHTSTICK_MOVE: "xboxone_stick_r_move";
-			case XBOXONE_RIGHTSTICK_CLICK: "xboxone_stick_r_click";
-			case XBOXONE_RIGHTSTICK_DPADNORTH: "xboxone_stick_r_dpad_n";
-			case XBOXONE_RIGHTSTICK_DPADSOUTH: "xboxone_stick_r_dpad_s";
-			case XBOXONE_RIGHTSTICK_DPADWEST: "xboxone_stick_r_dpad_w";
-			case XBOXONE_RIGHTSTICK_DPADEAST: "xboxone_stick_r_dpad_e";
-			case XBOXONE_DPAD_NORTH: "xboxone_button_dpad_n";
-			case XBOXONE_DPAD_SOUTH: "xboxone_button_dpad_s";
-			case XBOXONE_DPAD_WEST: "xboxone_button_dpad_w";
-			case XBOXONE_DPAD_EAST: "xboxone_button_dpad_e";
-
-			// Microsoft XBox 360:
-			case XBOX360_A: "xbox360_button_a";
-			case XBOX360_B: "xbox360_button_b";
-			case XBOX360_X: "xbox360_button_x";
-			case XBOX360_Y: "xbox360_button_y";
-			case XBOX360_LEFTBUMPER: "xbox360_shoulder_l";
-			case XBOX360_RIGHTBUMPER: "xbox360_shouldr_r";
-			case XBOX360_START: "xbox360_button_start";
-			case XBOX360_BACK: "xbox360_button_back";
-			case XBOX360_LEFTTRIGGER_PULL: "xbox360_trigger_l_pull";
-			case XBOX360_LEFTTRIGGER_CLICK: "xbox360_trigger_l_click";
-			case XBOX360_RIGHTTRIGGER_PULL: "xbox360_trigger_r_pull";
-			case XBOX360_RIGHTTRIGGER_CLICK: "xbox360_trigger_r_click";
-			case XBOX360_LEFTSTICK_MOVE: "xbox360_stick_l_move";
-			case XBOX360_LEFTSTICK_CLICK: "xbox360_stick_l_click";
-			case XBOX360_LEFTSTICK_DPADNORTH: "xbox360_stick_l_dpad_n";
-			case XBOX360_LEFTSTICK_DPADSOUTH: "xbox360_stick_l_dpad_s";
-			case XBOX360_LEFTSTICK_DPADWEST: "xbox360_stick_l_dpad_w";
-			case XBOX360_LEFTSTICK_DPADEAST: "xbox360_stick_l_dpad_e";
-			case XBOX360_RIGHTSTICK_MOVE: "xbox360_stick_r_move";
-			case XBOX360_RIGHTSTICK_CLICK: "xbox360_stick_r_click";
-			case XBOX360_RIGHTSTICK_DPADNORTH: "xbox360_stick_r_dpad_n";
-			case XBOX360_RIGHTSTICK_DPADSOUTH: "xbox360_stick_r_dpad_s";
-			case XBOX360_RIGHTSTICK_DPADWEST: "xbox360_stick_r_dpad_w";
-			case XBOX360_RIGHTSTICK_DPADEAST: "xbox360_stick_r_dpad_e";
-			case XBOX360_DPAD_NORTH: "xbox360_button_dpad_n";
-			case XBOX360_DPAD_SOUTH: "xbox360_button_dpad_s";
-			case XBOX360_DPAD_WEST: "xbox360_button_dpad_w";
-			case XBOX360_DPAD_EAST: "xbox360_button_dpad_e";
-
-			default: "unknown";
-		}
 	}
 }
 
@@ -1120,6 +1248,11 @@ enum abstract EGamepadTextInputLineMode(Int) {
 enum abstract EGamepadTextInputMode(Int) {
 	public var NORMAL = 0;
 	public var PASSWORD = 1;
+}
+
+enum abstract ESteamInputActionEventType(Int) {
+	var DigitalAction;
+	var AnalogAction;
 }
 
 enum abstract ESteamInputType(Int) {
