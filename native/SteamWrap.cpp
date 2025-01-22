@@ -2673,7 +2673,7 @@ value SteamWrap_GetEnteredGamepadTextInput()
 DEFINE_PRIM(SteamWrap_GetEnteredGamepadTextInput, 0);
 
 //-----------------------------------------------------------------------------------------------------------
-void SteamWrap_UpdateControllerHandlesMap()
+void UpdateControllerHandlesMap()
 {
 	SteamInput()->RunFrame();
 	
@@ -2686,17 +2686,22 @@ void SteamWrap_UpdateControllerHandlesMap()
 		
 		if(index < 0)
 		{
-			index = mapControllers.add(handles[i]);
+			mapControllers.add(handles[i]);
 		}
 	}
+}
 
+//-----------------------------------------------------------------------------------------------------------
+void SteamWrap_UpdateControllerHandlesMap()
+{
+	UpdateControllerHandlesMap();
 }
 DEFINE_PRIME0v(SteamWrap_UpdateControllerHandlesMap);
 
 //-----------------------------------------------------------------------------------------------------------
 value SteamWrap_GetConnectedControllers()
 {
-	SteamWrap_UpdateControllerHandlesMap();
+	UpdateControllerHandlesMap();
 	
 	std::ostringstream returnData;
 
@@ -2719,8 +2724,16 @@ DEFINE_PRIM(SteamWrap_GetConnectedControllers,0);
 //-----------------------------------------------------------------------------------------------------------
 value SteamWrap_GetSteamInputHandleForControllerAsString(int controllerHandle) 
 {
-	InputHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
-	return alloc_string(std::to_string(c_handle).c_str());
+	UpdateControllerHandlesMap();
+
+	if (mapControllers.existsKey(controllerHandle)) 
+	{
+		return alloc_string(std::to_string(mapControllers.get(controllerHandle)).c_str());
+	}
+
+	printf("SteamWrap_GetSteamInputHandleForControllerAsString(%d) could not find the InputHandle_t value\n", controllerHandle);
+	
+	return alloc_null();
 }
 DEFINE_PRIME1(SteamWrap_GetSteamInputHandleForControllerAsString);
 
@@ -2745,6 +2758,8 @@ DEFINE_PRIME1(SteamWrap_GetControllerForGamepadIndex);
 //-----------------------------------------------------------------------------------------------------------
 int SteamWrap_GetInputTypeForHandle(int controllerHandle)
 {
+	UpdateControllerHandlesMap();
+
 	if (mapControllers.existsKey(controllerHandle)) 
 	{
 		return SteamInput()->GetInputTypeForHandle(mapControllers.get(controllerHandle));
