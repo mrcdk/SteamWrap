@@ -2570,9 +2570,12 @@ void actionEventCallback(SteamInputActionEvent_t* event)
 }
 
 //-----------------------------------------------------------------------------------------------------------
-value SteamWrap_InitControllers(bool explicitlyCallRunFrame, bool enableCallbacks )
+value SteamWrap_InitControllers(value _explicitlyCallRunFrame, value _enableCallbacks )
 {
 	if (!SteamInput()) return alloc_bool(false);
+
+	bool explicitlyCallRunFrame = val_get_bool(_explicitlyCallRunFrame);
+	bool enableCallbacks = val_get_bool(_enableCallbacks);
 
 	bool result = SteamInput()->Init(explicitlyCallRunFrame);
 	
