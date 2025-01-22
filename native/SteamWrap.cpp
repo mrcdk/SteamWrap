@@ -208,6 +208,10 @@ class steamHandleMap
 		{
 			return values.end();
 		}
+
+		bool existsKey(int key) {
+			return values.find(key) != values.end();
+		}
 		
 		bool exists(uint64 val)
 		{
@@ -474,12 +478,12 @@ void CallbackHandler::OnInputGamepadSlotChanged( SteamInputGamepadSlotChange_t *
 void CallbackHandler::OnSteamInputConfigurationLoaded( SteamInputConfigurationLoaded_t *pCallback )
 {
 
-	if(pCallback->m_bUsesGamepadAPI) {
-		printf("Using xinput\n");
-	}
-	if(pCallback->m_bUsesSteamInputAPI) {
-		printf("Using steam input\n");
-	}
+	// if(pCallback->m_bUsesGamepadAPI) {
+	// 	printf("Using xinput\n");
+	// }
+	// if(pCallback->m_bUsesSteamInputAPI) {
+	// 	printf("Using steam input\n");
+	// }
 
 	// InputHandle_t handle = pCallback->m_ulDeviceHandle;
 	// int index = mapControllers.find(handle);
@@ -2741,9 +2745,14 @@ DEFINE_PRIME1(SteamWrap_GetControllerForGamepadIndex);
 //-----------------------------------------------------------------------------------------------------------
 int SteamWrap_GetInputTypeForHandle(int controllerHandle)
 {
-	InputHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
+	if (mapControllers.existsKey(controllerHandle)) 
+	{
+		return SteamInput()->GetInputTypeForHandle(mapControllers.get(controllerHandle));
+	}
+
+	printf("SteamWrap_GetInputTypeForHandle(%d) could not find the InputHandle_t value\n", controllerHandle);
 	
-	return SteamInput()->GetInputTypeForHandle(c_handle);
+	return k_ESteamInputType_Unknown;
 }
 DEFINE_PRIME1(SteamWrap_GetInputTypeForHandle);
 
