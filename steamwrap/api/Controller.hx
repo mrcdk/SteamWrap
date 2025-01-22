@@ -159,6 +159,17 @@ class Controller {
 	}
 
 	/**
+	 * Updates the internal controller->InputHandle map
+	 * Automatically called by Steam.onEnterFrame() but you can call it if needed
+	 */
+	public function updateControllerHandlesMap():Void {
+		if(!active) {
+			return;
+		}
+		SteamWrap_UpdateControllerHandlesMap();
+	}
+
+	/**
 	 * Enumerate currently connected controllers
 	 * 
 	 * NOTE: the native steam controller handles are uint64's and too large to easily pass to Haxe,
@@ -285,7 +296,6 @@ class Controller {
 	public function getStringForAnalogActionName(actionHandle:Int):String {
 		return SteamWrap_GetStringForAnalogActionName(actionHandle);
 	}
-	
 
 	/**
 	 * Activates the Steam overlay and shows the input configuration (binding) screen
@@ -440,6 +450,10 @@ class Controller {
 		SteamWrap_SetLEDColor.call(controller, 0, 0, 0, ESteamInputLEDFlags.RESTORE_USER_DEFAULT);
 	}
 
+	public function getSteamInputHandleForControllerAsString(controller:Int):String {
+		return SteamWrap_GetSteamInputHandleForControllerAsString.call(controller);
+	}
+
 	public function getGamepadIndexForController(controller:Int):Int {
 		return SteamWrap_GetGamepadIndexForController.call(controller);
 	}
@@ -563,6 +577,8 @@ class Controller {
 	private var SteamWrap_GetMotionData_rotVelZ = Loader.load("SteamWrap_GetMotionData_rotVelZ", "ii");
 	private var SteamWrap_ShowDigitalActionOrigins = Loader.load("SteamWrap_ShowDigitalActionOrigins", "iifffi");
 	private var SteamWrap_ShowAnalogActionOrigins = Loader.load("SteamWrap_ShowAnalogActionOrigins", "iifffi");
+	private var SteamWrap_UpdateControllerHandlesMap = Loader.load("SteamWrap_UpdateControllerHandlesMap", "v");
+	private var SteamWrap_GetSteamInputHandleForControllerAsString = Loader.load("SteamWrap_GetSteamInputHandleForControllerAsString", "io");
 	private var SteamWrap_GetGamepadIndexForController = Loader.load("SteamWrap_GetGamepadIndexForController", "ii");
 	private var SteamWrap_GetControllerForGamepadIndex = Loader.load("SteamWrap_GetControllerForGamepadIndex", "ii");
 	private var SteamWrap_GetInputTypeForHandle = Loader.load("SteamWrap_GetInputTypeForHandle", "ii");
@@ -801,7 +817,7 @@ enum abstract EInputActionOrigin(Int) {
 	var SteamController_Reserved8;
 	var SteamController_Reserved9;
 	var SteamController_Reserved10;
-	
+
 	// PS4 Dual Shock
 	var PS4_X;
 	var PS4_Circle;
@@ -809,8 +825,8 @@ enum abstract EInputActionOrigin(Int) {
 	var PS4_Square;
 	var PS4_LeftBumper;
 	var PS4_RightBumper;
-	var PS4_Options;	//Start
-	var PS4_Share;		//Back
+	var PS4_Options; // Start
+	var PS4_Share; // Back
 	var PS4_LeftPad_Touch;
 	var PS4_LeftPad_Swipe;
 	var PS4_LeftPad_Click;
@@ -875,8 +891,8 @@ enum abstract EInputActionOrigin(Int) {
 	var XBoxOne_Y;
 	var XBoxOne_LeftBumper;
 	var XBoxOne_RightBumper;
-	var XBoxOne_Menu;  //Start
-	var XBoxOne_View;  //Back
+	var XBoxOne_Menu; // Start
+	var XBoxOne_View; // Back
 	var XBoxOne_LeftTrigger_Pull;
 	var XBoxOne_LeftTrigger_Click;
 	var XBoxOne_RightTrigger_Pull;
@@ -916,8 +932,8 @@ enum abstract EInputActionOrigin(Int) {
 	var XBox360_Y;
 	var XBox360_LeftBumper;
 	var XBox360_RightBumper;
-	var XBox360_Start;		//Start
-	var XBox360_Back;		//Back
+	var XBox360_Start; // Start
+	var XBox360_Back; // Back
 	var XBox360_LeftTrigger_Pull;
 	var XBox360_LeftTrigger_Click;
 	var XBox360_RightTrigger_Pull;
@@ -937,7 +953,7 @@ enum abstract EInputActionOrigin(Int) {
 	var XBox360_DPad_North;
 	var XBox360_DPad_South;
 	var XBox360_DPad_West;
-	var XBox360_DPad_East;	
+	var XBox360_DPad_East;
 	var XBox360_DPad_Move;
 	var XBox360_Reserved1;
 	var XBox360_Reserved2;
@@ -950,7 +966,6 @@ enum abstract EInputActionOrigin(Int) {
 	var XBox360_Reserved9;
 	var XBox360_Reserved10;
 
-
 	// Switch - Pro or Joycons used as a single input device.
 	// This does not apply to a single joycon
 	var Switch_A;
@@ -959,8 +974,8 @@ enum abstract EInputActionOrigin(Int) {
 	var Switch_Y;
 	var Switch_LeftBumper;
 	var Switch_RightBumper;
-	var Switch_Plus;	//Start
-	var Switch_Minus;	//Back
+	var Switch_Plus; // Start
+	var Switch_Minus; // Back
 	var Switch_Capture;
 	var Switch_LeftTrigger_Pull;
 	var Switch_LeftTrigger_Click;
@@ -982,10 +997,10 @@ enum abstract EInputActionOrigin(Int) {
 	var Switch_DPad_South;
 	var Switch_DPad_West;
 	var Switch_DPad_East;
-	var Switch_ProGyro_Move;  // Primary Gyro in Pro Controller, or Right JoyCon
-	var Switch_ProGyro_Pitch;  // Primary Gyro in Pro Controller, or Right JoyCon
-	var Switch_ProGyro_Yaw;  // Primary Gyro in Pro Controller, or Right JoyCon
-	var Switch_ProGyro_Roll;  // Primary Gyro in Pro Controller, or Right JoyCon
+	var Switch_ProGyro_Move; // Primary Gyro in Pro Controller, or Right JoyCon
+	var Switch_ProGyro_Pitch; // Primary Gyro in Pro Controller, or Right JoyCon
+	var Switch_ProGyro_Yaw; // Primary Gyro in Pro Controller, or Right JoyCon
+	var Switch_ProGyro_Roll; // Primary Gyro in Pro Controller, or Right JoyCon
 	var Switch_DPad_Move;
 	var Switch_Reserved1;
 	var Switch_Reserved2;
@@ -999,18 +1014,18 @@ enum abstract EInputActionOrigin(Int) {
 	var Switch_Reserved10;
 
 	// Switch JoyCon Specific
-	var Switch_RightGyro_Move;  // Right JoyCon Gyro generally should correspond to Pro's single gyro
-	var Switch_RightGyro_Pitch;  // Right JoyCon Gyro generally should correspond to Pro's single gyro
-	var Switch_RightGyro_Yaw;  // Right JoyCon Gyro generally should correspond to Pro's single gyro
-	var Switch_RightGyro_Roll;  // Right JoyCon Gyro generally should correspond to Pro's single gyro
+	var Switch_RightGyro_Move; // Right JoyCon Gyro generally should correspond to Pro's single gyro
+	var Switch_RightGyro_Pitch; // Right JoyCon Gyro generally should correspond to Pro's single gyro
+	var Switch_RightGyro_Yaw; // Right JoyCon Gyro generally should correspond to Pro's single gyro
+	var Switch_RightGyro_Roll; // Right JoyCon Gyro generally should correspond to Pro's single gyro
 	var Switch_LeftGyro_Move;
 	var Switch_LeftGyro_Pitch;
 	var Switch_LeftGyro_Yaw;
 	var Switch_LeftGyro_Roll;
 	var Switch_LeftGrip_Lower; // Left JoyCon SR Button
 	var Switch_LeftGrip_Upper; // Left JoyCon SL Button
-	var Switch_RightGrip_Lower;  // Right JoyCon SL Button
-	var Switch_RightGrip_Upper;  // Right JoyCon SR Button
+	var Switch_RightGrip_Lower; // Right JoyCon SL Button
+	var Switch_RightGrip_Upper; // Right JoyCon SR Button
 	var Switch_JoyConButton_N; // With a Horizontal JoyCon this will be Y or what would be Dpad Right when vertical
 	var Switch_JoyConButton_E; // X
 	var Switch_JoyConButton_S; // A
@@ -1021,7 +1036,7 @@ enum abstract EInputActionOrigin(Int) {
 	var Switch_Reserved18;
 	var Switch_Reserved19;
 	var Switch_Reserved20;
-	
+
 	// Added in SDK 1.51
 	var PS5_X;
 	var PS5_Circle;
@@ -1029,8 +1044,8 @@ enum abstract EInputActionOrigin(Int) {
 	var PS5_Square;
 	var PS5_LeftBumper;
 	var PS5_RightBumper;
-	var PS5_Option;	//Start
-	var PS5_Create;		//Back
+	var PS5_Option; // Start
+	var PS5_Create; // Back
 	var PS5_Mute;
 	var PS5_LeftPad_Touch;
 	var PS5_LeftPad_Swipe;
@@ -1260,15 +1275,15 @@ enum abstract ESteamInputType(Int) {
 	var SteamController;
 	var XBox360Controller;
 	var XBoxOneController;
-	var GenericGamepad;		// DirectInput controllers
+	var GenericGamepad; // DirectInput controllers
 	var PS4Controller;
-	var AppleMFiController;	// Unused
-	var AndroidController;	// Unused
-	var SwitchJoyConPair;		// Unused
-	var SwitchJoyConSingle;	// Unused
+	var AppleMFiController; // Unused
+	var AndroidController; // Unused
+	var SwitchJoyConPair; // Unused
+	var SwitchJoyConSingle; // Unused
 	var SwitchProController;
-	var MobileTouch;			// Steam Link App On-screen Virtual Controller
-	var PS3Controller;		// Currently uses PS4 Origins
-	var PS5Controller;		// Added in SDK 151
-	var SteamDeckController;	// Added in SDK 153
+	var MobileTouch; // Steam Link App On-screen Virtual Controller
+	var PS3Controller; // Currently uses PS4 Origins
+	var PS5Controller; // Added in SDK 151
+	var SteamDeckController; // Added in SDK 153
 }

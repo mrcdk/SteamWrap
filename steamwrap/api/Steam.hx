@@ -398,6 +398,8 @@ class Steam {
 	public static function onEnterFrame() {
 		if (!active)
 			return;
+		
+		controllers.updateControllerHandlesMap();
 		SteamWrap_RunCallbacks();
 
 		if (wantStoreStats) {

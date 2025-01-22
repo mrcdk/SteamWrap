@@ -198,6 +198,16 @@ class steamHandleMap
 			values.clear();
 			maxKey = -1;
 		}
+
+		std::map<int, uint64>::const_iterator begin() const
+		{
+			return values.begin();
+		}
+
+		std::map<int, uint64>::const_iterator end() const
+		{
+			return values.end();
+		}
 		
 		bool exists(uint64 val)
 		{
@@ -2659,17 +2669,13 @@ value SteamWrap_GetEnteredGamepadTextInput()
 DEFINE_PRIM(SteamWrap_GetEnteredGamepadTextInput, 0);
 
 //-----------------------------------------------------------------------------------------------------------
-value SteamWrap_GetConnectedControllers()
+void SteamWrap_UpdateControllerHandlesMap()
 {
 	SteamInput()->RunFrame();
 	
 	InputHandle_t handles[STEAM_INPUT_MAX_COUNT];
 	int result = SteamInput()->GetConnectedControllers(handles);
-	
-	std::ostringstream returnData;
-	
-	//store the handles locally and pass back a string representing an int array of unique index lookup values
-	
+
 	for(int i = 0; i < result; i++)
 	{
 		int index = mapControllers.find(handles[i]);
@@ -2678,21 +2684,41 @@ value SteamWrap_GetConnectedControllers()
 		{
 			index = mapControllers.add(handles[i]);
 		}
-		
-		
-		if(index != -1)
+	}
+
+}
+DEFINE_PRIME0v(SteamWrap_UpdateControllerHandlesMap);
+
+//-----------------------------------------------------------------------------------------------------------
+value SteamWrap_GetConnectedControllers()
+{
+	SteamWrap_UpdateControllerHandlesMap();
+	
+	std::ostringstream returnData;
+
+	//store the handles locally and pass back a string representing an int array of unique index lookup values
+ 	bool first = true; // To avoid leading comma
+	for (auto pair = mapControllers.begin(); pair != mapControllers.end(); ++pair) 
+	{
+		if (!first) 
 		{
-			returnData << index;
-			if(i != result-1)
-			{
-				returnData << ",";
-			}
+			returnData << ",";  // Add a comma before each key except the first one
 		}
+		returnData << pair->first;
+		first = false;
 	}
 	
 	return alloc_string(returnData.str().c_str());
 }
 DEFINE_PRIM(SteamWrap_GetConnectedControllers,0);
+
+//-----------------------------------------------------------------------------------------------------------
+value SteamWrap_GetSteamInputHandleForControllerAsString(int controllerHandle) 
+{
+	InputHandle_t c_handle = controllerHandle != -1 ? mapControllers.get(controllerHandle) : STEAM_INPUT_HANDLE_ALL_CONTROLLERS;
+	return alloc_string(std::to_string(c_handle).c_str());
+}
+DEFINE_PRIME1(SteamWrap_GetSteamInputHandleForControllerAsString);
 
 //-----------------------------------------------------------------------------------------------------------
 int SteamWrap_GetGamepadIndexForController(int controllerHandle)
