@@ -466,6 +466,10 @@ class Controller {
 		return cast SteamWrap_GetInputTypeForHandle.call(controller);
 	}
 
+	public function getInputTypeForRawHandle(handle:String):ESteamInputType {
+		return cast SteamWrap_GetInputTypeForRawHandle.call(handle);
+	}
+
 	/**
 	 * Returns the current state of the supplied analog game action
 	 * 
@@ -582,6 +586,7 @@ class Controller {
 	private var SteamWrap_GetGamepadIndexForController = Loader.load("SteamWrap_GetGamepadIndexForController", "ii");
 	private var SteamWrap_GetControllerForGamepadIndex = Loader.load("SteamWrap_GetControllerForGamepadIndex", "ii");
 	private var SteamWrap_GetInputTypeForHandle = Loader.load("SteamWrap_GetInputTypeForHandle", "ii");
+	private var SteamWrap_GetInputTypeForRawHandle = Loader.load("SteamWrap_GetInputTypeForRawHandle", "oi");
 
 	private function new(appId_:Int, CustomTrace:String->Void, enableCallbacks:Bool) {
 		appId = appId_;

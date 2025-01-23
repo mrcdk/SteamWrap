@@ -10,6 +10,7 @@
 #include <vector>
 #include <sstream>
 #include <iostream>
+#include <cinttypes>
 #include <map>
 
 #include <steam/steam_api.h>
@@ -2770,6 +2771,39 @@ int SteamWrap_GetInputTypeForHandle(int controllerHandle)
 	return k_ESteamInputType_Unknown;
 }
 DEFINE_PRIME1(SteamWrap_GetInputTypeForHandle);
+
+//-----------------------------------------------------------------------------------------------------------
+int SteamWrap_GetInputTypeForRawHandle(value strHandle)
+{
+	const char* str = val_string(strHandle);
+	InputHandle_t c_handle = strtoull(str, NULL, 10);
+
+	if(c_handle > 0) {
+
+		SteamInput()->RunFrame();
+		InputHandle_t handles[STEAM_INPUT_MAX_COUNT];
+		int result = SteamInput()->GetConnectedControllers(handles);
+		bool valid = false;
+		for(int i = 0; i < result; ++i) {
+			if(handles[i] == c_handle) {
+				valid = true;
+				break;
+			}
+		}
+
+		if(!valid) {
+			printf("SteamWrap_GetInputTypeForRawHandle(%s) could not find the InputHandle_t (%" PRIu64 ") value in connected controllers\n", str, c_handle);
+			return k_ESteamInputType_Unknown;
+		}
+
+		return SteamInput()->GetInputTypeForHandle(c_handle);
+	}
+
+	printf("SteamWrap_GetInputTypeForRawHandle(%s) invalid InputHandle_t (%" PRIu64 ")!\n", str, c_handle);
+	
+	return k_ESteamInputType_Unknown;
+}
+DEFINE_PRIME1(SteamWrap_GetInputTypeForRawHandle);
 
 //-----------------------------------------------------------------------------------------------------------
 int SteamWrap_GetActionSetHandle(const char * actionSetName)
