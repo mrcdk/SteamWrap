@@ -1,11 +1,14 @@
 /native/include/hx/*.h
-/native/include/steam/*.h
+/native/include/steam/**/*.*
 /native/lib/*
 /native/obj
 /native/all_objs
 /native/*.pdb
 /obj
 temp/
+
+*.ndll
+*.hash
 
 temp64/
 
