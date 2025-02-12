@@ -1,6 +1,5 @@
 /native/include/hx/*.h
 /native/include/steam/**/*.*
-/native/lib/*
 /native/obj
 /native/all_objs
 /native/*.pdb
@@ -9,6 +8,10 @@ temp/
 
 *.ndll
 *.hash
+*.so
+*.dll
+*.lib
+*.dylib
 
 temp64/
 
