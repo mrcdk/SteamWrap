@@ -1023,30 +1023,34 @@ static bool CheckInit()
 //-----------------------------------------------------------------------------------------------------------
 value SteamWrap_Init(value onEvent, value notificationPosition)
 {
-	bool result = SteamAPI_Init();
-	if (result)
-	{
-		g_eventHandler = new AutoGCRoot(onEvent);
-		s_callbackHandler = new CallbackHandler();
+	bool result = true;
+	SteamErrMsg errMsg;
+	if (SteamAPI_InitEx(&errMsg) != k_ESteamAPIInitResult_OK) {
+		printf("Failed to init Steam.  %s", errMsg);
+		result = false;
+	}
 
-		switch (val_int(notificationPosition))
-		{
-			case 0:
-				SteamUtils()->SetOverlayNotificationPosition(k_EPositionTopLeft);
-				break;
-			case 1:
-				SteamUtils()->SetOverlayNotificationPosition(k_EPositionTopRight);
-				break;
-			case 2:
-				SteamUtils()->SetOverlayNotificationPosition(k_EPositionBottomRight);
-				break;
-			case 3:
-				SteamUtils()->SetOverlayNotificationPosition(k_EPositionBottomLeft);
-				break;
-			default:
-				SteamUtils()->SetOverlayNotificationPosition(k_EPositionBottomRight);
-				break;
-		}
+  if (result) {
+    g_eventHandler = new AutoGCRoot(onEvent);
+    s_callbackHandler = new CallbackHandler();
+
+    switch (val_int(notificationPosition)) {
+    case 0:
+      SteamUtils()->SetOverlayNotificationPosition(k_EPositionTopLeft);
+      break;
+    case 1:
+      SteamUtils()->SetOverlayNotificationPosition(k_EPositionTopRight);
+      break;
+    case 2:
+      SteamUtils()->SetOverlayNotificationPosition(k_EPositionBottomRight);
+      break;
+    case 3:
+      SteamUtils()->SetOverlayNotificationPosition(k_EPositionBottomLeft);
+      break;
+    default:
+      SteamUtils()->SetOverlayNotificationPosition(k_EPositionBottomRight);
+      break;
+    }
 	}
 	return alloc_bool(result);
 }
